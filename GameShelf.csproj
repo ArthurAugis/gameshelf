@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>GameShelf</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Product>GameShelf</Product>
+    <Description>A virtual bookshelf for your Steam library.</Description>
+    <Version>0.1.0</Version>
+    <RepositoryUrl>https://github.com/ArthurAugis/GameShelf</RepositoryUrl>
+    <!-- Ship the .NET runtime texts only for the languages GameShelf is translated in (smaller installer) -->
+    <SatelliteResourceLanguages>en;fr;es;de</SatelliteResourceLanguages>
+
+    <!-- Code analysis: keep the build free of warnings -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- missing XML comment: the types are internal to this app -->
+
+    <!-- The unit tests live in their own project, not in this one -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests\**;installer\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lets the app know its own repository, to look for new releases -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>RepositoryUrl</_Parameter1>
+      <_Parameter2>$(RepositoryUrl)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\logo.png" />
+    <EmbeddedResource Include="Localization\*.json" />
+    <InternalsVisibleTo Include="GameShelf.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+  </ItemGroup>
+
+</Project>

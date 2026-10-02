@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Thin scroll bars: no arrows, a rounded gold thumb that lights up under the mouse. Applies to every scroll bar. -->
+
+    <!-- Clicking the track pages the view; the track itself is invisible. -->
+    <Style x:Key="ScrollTrackButton" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="Transparent"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <ControlTemplate x:Key="ScrollThumbTemplate" TargetType="Thumb">
+        <Border x:Name="Bar" Margin="3" CornerRadius="3" Background="#55d9b77a"/>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bar" Property="Background" Value="#99d9b77a"/>
+                <Setter TargetName="Bar" Property="Margin" Value="2"/>
+            </Trigger>
+            <Trigger Property="IsDragging" Value="True">
+                <Setter TargetName="Bar" Property="Background" Value="#d9b77a"/>
+                <Setter TargetName="Bar" Property="Margin" Value="2"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style x:Key="ScrollThumbVertical" TargetType="Thumb">
+        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="Template" Value="{StaticResource ScrollThumbTemplate}"/>
+    </Style>
+
+    <Style x:Key="ScrollThumbHorizontal" TargetType="Thumb">
+        <Setter Property="MinWidth" Value="36"/>
+        <Setter Property="Template" Value="{StaticResource ScrollThumbTemplate}"/>
+    </Style>
+
+    <ControlTemplate x:Key="VerticalScrollBarTemplate" TargetType="ScrollBar">
+        <Border Background="Transparent" Width="12">
+            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Command="ScrollBar.PageUpCommand" Style="{StaticResource ScrollTrackButton}"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource ScrollThumbVertical}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Command="ScrollBar.PageDownCommand" Style="{StaticResource ScrollTrackButton}"/>
+                </Track.IncreaseRepeatButton>
+            </Track>
+        </Border>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="HorizontalScrollBarTemplate" TargetType="ScrollBar">
+        <Border Background="Transparent" Height="12">
+            <Track x:Name="PART_Track">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Command="ScrollBar.PageLeftCommand" Style="{StaticResource ScrollTrackButton}"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource ScrollThumbHorizontal}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Command="ScrollBar.PageRightCommand" Style="{StaticResource ScrollTrackButton}"/>
+                </Track.IncreaseRepeatButton>
+            </Track>
+        </Border>
+    </ControlTemplate>
+
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template" Value="{StaticResource VerticalScrollBarTemplate}"/>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Template" Value="{StaticResource HorizontalScrollBarTemplate}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

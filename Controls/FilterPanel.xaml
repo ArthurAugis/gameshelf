@@ -1,0 +1,46 @@
+<UserControl x:Class="GameShelf.Controls.FilterPanel"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="470">
+    <Border Background="#F5181510" BorderBrush="#66d9b77a" BorderThickness="1" CornerRadius="10" Padding="22,18,22,14">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="22" ShadowDepth="6" Opacity="0.55"/>
+        </Border.Effect>
+        <StackPanel>
+            <TextBlock Text="SORT BY" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,0,0,8"/>
+            <WrapPanel x:Name="SortChips"/>
+
+            <TextBlock Text="GROUP BY" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,10,0,8"/>
+            <WrapPanel x:Name="GroupChips"/>
+
+            <TextBlock Text="STATUS" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,10,0,8"/>
+            <WrapPanel x:Name="StatusChips"/>
+
+            <TextBlock Text="PLAYED" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,10,0,8"/>
+            <WrapPanel x:Name="PlayChips"/>
+
+            <StackPanel x:Name="LauncherSection">
+                <TextBlock Text="LAUNCHER" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,10,0,8"/>
+                <WrapPanel x:Name="LauncherChips"/>
+            </StackPanel>
+
+            <StackPanel x:Name="FeatureSection">
+                <TextBlock Text="FEATURES  (must have all)" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,10,0,8"/>
+                <WrapPanel x:Name="FeatureChips"/>
+            </StackPanel>
+
+            <StackPanel x:Name="GenreSection">
+                <TextBlock Text="GENRE  (any of)" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,10,0,8"/>
+                <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+                    <WrapPanel x:Name="GenreChips"/>
+                </ScrollViewer>
+            </StackPanel>
+
+            <Grid Margin="0,12,0,0">
+                <TextBlock x:Name="ResultText" Foreground="#9a9183" FontSize="12.5" VerticalAlignment="Center"/>
+                <Button Content="Clear all" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Click="OnClearAllClick"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

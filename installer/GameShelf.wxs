@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Windows installer of GameShelf (WiX 5). Installs for the current user only, so it needs no administrator
+  rights, under %LOCALAPPDATA%\Programs\GameShelf, with a Start menu shortcut. Installing a newer version
+  replaces the older one (MajorUpgrade), which is how the in-app update works.
+
+  Build it from the folder produced by `dotnet publish` (see the release workflow):
+    wix build installer/GameShelf.wxs -arch x64 -d Version=1.2.3 -d PublishDir=C:\path\to\publish -o GameShelf.msi
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="GameShelf" Manufacturer="GameShelf contributors" Version="$(Version)"
+           UpgradeCode="6f1c3a52-8d0e-4b7a-9c41-2a5e7f0b9d13" Scope="perUser" InstallerVersion="500">
+
+    <SummaryInformation Description="A virtual bookshelf for your Steam library." />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of GameShelf is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon.ico" SourceFile="$(sys.SOURCEFILEDIR)..\Assets\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="GameShelf" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut" Guid="*">
+        <Shortcut Id="AppShortcut" Name="GameShelf" Target="[INSTALLFOLDER]GameShelf.exe" WorkingDirectory="INSTALLFOLDER" />
+        <!-- A per-user component needs a registry value as its key path -->
+        <RegistryValue Root="HKCU" Key="Software\GameShelf" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(PublishDir)\**" />
+    </ComponentGroup>
+
+    <Feature Id="Main" Title="GameShelf">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

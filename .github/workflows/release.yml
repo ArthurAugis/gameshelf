@@ -1,0 +1,62 @@
+name: Release
+
+# Publishes a GitHub release when a tag such as v1.2.3 is pushed:
+#   git tag v1.2.3
+#   git push origin v1.2.3
+# The release gets the installer (GameShelf-1.2.3-win-x64.msi) and a portable zip. GameShelf itself looks for
+# new releases on GitHub and offers to install the .msi.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Version from the tag
+        id: version
+        shell: pwsh
+        run: |
+          $number = '${{ github.ref_name }}'.TrimStart('v')
+          if ($number -notmatch '^\d+\.\d+\.\d+$') { throw "The tag must look like v1.2.3, not ${{ github.ref_name }}" }
+          "number=$number" >> $env:GITHUB_OUTPUT
+
+      - name: Build and test
+        run: |
+          dotnet build GameShelf.sln -c Release -warnaserror -p:Version=${{ steps.version.outputs.number }}
+          dotnet test GameShelf.sln -c Release --no-build
+
+      - name: Publish
+        run: >
+          dotnet publish GameShelf.csproj -c Release -r win-x64 --self-contained
+          -p:Version=${{ steps.version.outputs.number }} -o publish
+
+      - name: Portable zip
+        shell: pwsh
+        run: Compress-Archive -Path publish\* -DestinationPath GameShelf-${{ steps.version.outputs.number }}-win-x64.zip
+
+      - name: Installer
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix build installer\GameShelf.wxs -arch x64 `
+            -d Version=${{ steps.version.outputs.number }} -d PublishDir=$PWD\publish `
+            -o GameShelf-${{ steps.version.outputs.number }}-win-x64.msi
+
+      - name: Create the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            GameShelf-*-win-x64.msi
+            GameShelf-*-win-x64.zip
+          generate_release_notes: true

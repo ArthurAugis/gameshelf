@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # The project is kept free of warnings: any new one fails the build.
+      - name: Build
+        run: dotnet build GameShelf.sln -c Release -warnaserror
+
+      - name: Test
+        run: dotnet test GameShelf.sln -c Release --no-build

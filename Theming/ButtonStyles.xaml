@@ -1,0 +1,109 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Shared by every button: flat rounded chrome, hover and pressed feedback instead of the system look. -->
+    <ControlTemplate x:Key="FlatButtonTemplate" TargetType="Button">
+        <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Chrome" Property="Opacity" Value="0.86"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Chrome" Property="Opacity" Value="0.7"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- Main action: solid fill. Set Background on the button for another colour. -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource FlatButtonTemplate}"/>
+        <Setter Property="Background" Value="#4c9b3a"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="22,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <!-- Destructive action (uninstall, stop a download). -->
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+        <Setter Property="Background" Value="#b4443a"/>
+    </Style>
+
+    <!-- Secondary action: outline only. -->
+    <Style x:Key="SecondaryButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource FlatButtonTemplate}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#e6e0d2"/>
+        <Setter Property="BorderBrush" Value="#66FFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="20,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <!-- Quiet action: looks like text. -->
+    <Style x:Key="LinkButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource FlatButtonTemplate}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#8a8378"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <!-- Toggle chip, for filters: light when off, gold when on. -->
+    <Style x:Key="ChipToggle" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="#ddd6c8"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Chip" Background="#26FFFFFF" CornerRadius="14" Padding="12,5,12,6">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chip" Property="Background" Value="#3DFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Chip" Property="Background" Value="#d9b77a"/>
+                            <Setter Property="Foreground" Value="#1b1712"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Dark tooltip matching the shelf -->
+    <Style TargetType="ToolTip">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="HasDropShadow" Value="True"/>
+        <Setter Property="Foreground" Value="#efe6d2"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="#F2181510" BorderBrush="#99d9b77a" BorderThickness="1"
+                            CornerRadius="6" Padding="12,7" Margin="0,0,8,8">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.6"/>
+                        </Border.Effect>
+                        <ContentPresenter TextBlock.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

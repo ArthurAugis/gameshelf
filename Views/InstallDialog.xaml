@@ -1,0 +1,77 @@
+<UserControl x:Class="GameShelf.Views.InstallDialog"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="540" Background="#1b1b1b">
+    <StackPanel Margin="28">
+        <TextBlock x:Name="TitleText" FontSize="22" FontWeight="Bold" Foreground="White" TextWrapping="Wrap"/>
+        <TextBlock x:Name="SizeText" Foreground="#9a9183" FontSize="13.5" Margin="0,6,0,0"/>
+
+        <TextBlock Text="INSTALL ON" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,24,0,8"/>
+        <ListBox x:Name="FolderList" Background="Transparent" BorderThickness="0" MaxHeight="230"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="OnFolderSelected">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Margin" Value="0,0,0,6"/>
+                    <Setter Property="IsEnabled" Value="{Binding HasSpace}"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border x:Name="Row" Background="#242220" BorderBrush="#35322e" BorderThickness="1"
+                                        CornerRadius="6" Padding="14,10">
+                                    <ContentPresenter/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="#2d2a27"/>
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="#22384f"/>
+                                        <Setter TargetName="Row" Property="BorderBrush" Value="#4a90d9"/>
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter TargetName="Row" Property="Opacity" Value="0.45"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="15"/>
+                            <TextBlock Text="{Binding Folder.Path}" Foreground="#7a7367" FontSize="11.5" Margin="0,2,0,0"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding FreeText}" Foreground="#9a9183" FontSize="13"
+                                   VerticalAlignment="Center" Margin="16,0,0,0"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock x:Name="SpaceWarning" Foreground="#e08a6a" FontSize="12.5" TextWrapping="Wrap" Margin="0,4,0,0"
+                   Visibility="Collapsed" Text="No folder has enough free space for this game."/>
+
+        <CheckBox x:Name="DesktopCheck" Content="Create a desktop shortcut" IsChecked="True" Foreground="#cfc8bb" Margin="0,18,0,0"/>
+        <CheckBox x:Name="StartMenuCheck" Content="Create a Start menu shortcut" IsChecked="True" Foreground="#cfc8bb" Margin="0,8,0,0"/>
+
+        <Grid Margin="0,26,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="InstallButton" Content="Install" Style="{StaticResource PrimaryButton}" Background="#2d6fb3"
+                    Height="44" Click="OnInstallClick"/>
+            <Button Grid.Column="2" Content="Cancel" Style="{StaticResource SecondaryButton}" Height="44" Click="OnCancelClick"/>
+        </Grid>
+    </StackPanel>
+</UserControl>

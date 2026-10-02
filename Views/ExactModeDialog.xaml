@@ -1,0 +1,29 @@
+<UserControl x:Class="GameShelf.Views.ExactModeDialog"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="560" Background="#1b1b1b">
+    <StackPanel Margin="28">
+        <TextBlock Text="Show your exact library" FontSize="22" FontWeight="Bold" Foreground="White"/>
+        <TextBlock Foreground="#ccc" FontSize="14" TextWrapping="Wrap" Margin="0,14,0,0" LineHeight="21"
+                   Text="Steam does not keep a list of what you own today on your PC. Without it, GameShelf also shows refunded games and games from people who left your family."/>
+        <TextBlock Foreground="#ccc" FontSize="14" TextWrapping="Wrap" Margin="0,10,0,0" LineHeight="21"
+                   Text="GameShelf can ask Steam for that list directly. To do so it turns on a Steam debug mode and restarts Steam (running downloads and games will be interrupted)."/>
+        <Border Background="#2a2418" BorderBrush="#6b5a2e" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,16,0,0">
+            <TextBlock Foreground="#e0c98a" FontSize="12.5" TextWrapping="Wrap" LineHeight="19"
+                       Text="Good to know: while this mode is on, Steam opens a local access point (this PC only, on a random port) that other programs on your PC could find and use. You can turn it off at any time by deleting the .cef-enable-remote-debugging file in your Steam folder."/>
+        </Border>
+        <Button Content="Enable and restart Steam" Style="{StaticResource PrimaryButton}" Height="44" Margin="0,22,0,0"
+                Click="OnEnableClick"/>
+        <Grid Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Content="Not now" Style="{StaticResource SecondaryButton}" Height="36" Click="OnNotNowClick"/>
+            <Button Grid.Column="2" Content="Don't ask again" Style="{StaticResource SecondaryButton}" Foreground="#9a9183"
+                    Height="36" Click="OnNeverClick"/>
+        </Grid>
+    </StackPanel>
+</UserControl>

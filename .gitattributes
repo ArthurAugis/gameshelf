@@ -1,0 +1,6 @@
+# Normalise line endings of text files; Git converts them on checkout for each platform.
+* text=auto
+
+# Never touch binary files
+*.png binary
+*.ico binary
