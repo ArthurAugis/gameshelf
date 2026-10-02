@@ -405,7 +405,7 @@ internal sealed partial class MainWindow : Window
     /// <summary>
     /// Adds the spines in rows of the same size, centred, with a plank under each row (no ragged last row).
     /// </summary>
-    void AddRows(IReadOnlyList<SpineView> items, int maxPerRow)
+    void AddRows(List<SpineView> items, int maxPerRow)
     {
         int rowCount = (int)Math.Ceiling(items.Count / (double)maxPerRow);
         int perRow = (int)Math.Ceiling(items.Count / (double)rowCount);
