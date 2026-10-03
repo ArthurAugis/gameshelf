@@ -103,7 +103,7 @@ internal static class BoxTextures
         };
         foreach (var launcher in game.OwnedOn)
         {
-            var logo = PlatformLogos.Create(launcher, 28);
+            var logo = PlatformLogos.Create(launcher, 28, console: game.Console);
             logo.Margin = new Thickness(0, logos.Children.Count == 0 ? 0 : 16, 0, 0);
             logos.Children.Add(logo);
         }
@@ -200,7 +200,7 @@ internal static class BoxTextures
             Margin = new Thickness(10),
             HorizontalAlignment = HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Bottom,
-            Child = PlatformLogos.Row(game.OwnedOn, 20, 8),
+            Child = PlatformLogos.Row(game.OwnedOn, 20, 8, game.Console),
         };
         return new Grid { Width = CoverWidth, Height = CoverHeight, Children = { face, pill } };
     }

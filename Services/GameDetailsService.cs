@@ -24,6 +24,7 @@ internal static class GameDetailsService
     public static Task<GameDetails?> GetAsync(uint appId)
     {
         // Not a Steam id: what the launcher says about the game is all there is.
+        if (ManualGames.IsManualId(appId)) return Task.FromResult(ManualGames.DetailsOf(appId));
         if (GogLibrary.IsGogId(appId)) return Task.FromResult(GogLibrary.DetailsOf(appId));
         if (EpicLibrary.IsEpicId(appId)) return Task.FromResult(EpicLibrary.DetailsOf(appId));
 

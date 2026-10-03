@@ -129,13 +129,14 @@ internal sealed partial class DetailView : UserControl
         var stats = game.Launcher switch
         {
             Launcher.Steam => SteamLibrary.ReadPlayStats(game.AppId),
-            Launcher.Gog => new PlayStats(game.PlayTime, game.LastPlayed),
+            Launcher.Gog or Launcher.Manual => new PlayStats(game.PlayTime, game.LastPlayed),
             _ => null,
         };
         PlayTimeValue.Text = stats is { PlayTime.TotalMinutes: > 0 } ? DisplayFormat.PlayTime(stats.PlayTime)
-            : game.Launcher is Launcher.Steam or Launcher.Gog ? Loc.T("Never played") : "-";
+            : game.Launcher is Launcher.Steam or Launcher.Gog or Launcher.Manual ? Loc.T("Never played") : "-";
         LastPlayedValue.Text = stats?.LastPlayed is { } date ? date.ToString("d MMM yyyy", CultureInfo.CurrentCulture) : "-";
         foreach (var launcher in game.OwnedOn) GenreChips.Children.Add(CreatePlatformChip(launcher));
+        EditButton.Visibility = game.Launcher == Launcher.Manual ? Visibility.Visible : Visibility.Collapsed;
         HideButton.Content = HiddenGames.Contains(game.KeyId)
             ? Loc.T("Show this game on the shelf again")
             : Loc.T("Hide this game from the shelf");
@@ -276,7 +277,7 @@ internal sealed partial class DetailView : UserControl
         }
         PlayButton.Visibility = game.Installed && idle ? Visibility.Visible : Visibility.Collapsed;
         UninstallButton.Visibility = (game.Installed && idle) || stopped ? Visibility.Visible : Visibility.Collapsed;
-        UninstallButton.Content = Loc.T(stopped ? "Delete the downloaded files" : "Uninstall");
+        UninstallButton.Content = Loc.T(stopped ? "Delete the downloaded files" : game.Launcher == Launcher.Manual ? "Remove from shelf" : "Uninstall");
         InstallButton.Visibility = !game.Installed && idle ? Visibility.Visible : Visibility.Collapsed;
         InstallButton.Content = Loc.T(stopped ? "Resume the download" : "Install");
         ProgressPanel.Visibility = installing ? Visibility.Visible : Visibility.Collapsed;
@@ -314,13 +315,13 @@ internal sealed partial class DetailView : UserControl
     /// </summary>
     Border CreatePlatformChip(Launcher launcher)
     {
-        var chip = CreateChip(launcher.DisplayName());
+        var chip = CreateChip(game.LabelOf(launcher));
         var label = (TextBlock)chip.Child;
         chip.Child = null; // the label moves into the panel below: it can only have one parent
         chip.Child = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Children = { PlatformLogos.Create(launcher, 13), label },
+            Children = { PlatformLogos.Create(launcher, 13, console: game.Console), label },
         };
         label.Margin = new Thickness(6, 0, 0, 0);
 
@@ -449,6 +450,7 @@ internal sealed partial class DetailView : UserControl
     {
         if (game.Launcher == Launcher.Steam) SteamControl.Play(game.AppId);
         else if (game.Launcher == Launcher.Gog) GogLibrary.Play(game);
+        else if (game.Launcher == Launcher.Manual) ManualGames.Play(game);
         else if (game.LaunchUri is { } uri) OpenUri(uri);
     }
 
@@ -509,6 +511,17 @@ internal sealed partial class DetailView : UserControl
         if (game.Launcher == Launcher.Epic)
         {
             await UninstallEpicAsync();
+            return;
+        }
+        if (game.Launcher == Launcher.Manual)
+        {
+            if (MessageDialog.Confirm(Host, Loc.T("Remove {0} from the shelf?", game.Name),
+                    Loc.T("The program and its files are not touched."),
+                    confirmText: Loc.T("Remove"), cancelText: Loc.T("Keep it"), destructive: true))
+            {
+                ManualGames.Remove(game);
+                Close();
+            }
             return;
         }
         if (game.Launcher == Launcher.Gog)
@@ -743,6 +756,12 @@ internal sealed partial class DetailView : UserControl
         {
             return 0; // the launcher is creating or moving files: the next tick measures again
         }
+    }
+
+    /// <summary>Edits a game added by hand; the shelf reads the list again and this page, which shows the old values, closes.</summary>
+    void OnEditClick(object sender, RoutedEventArgs e)
+    {
+        if (AddGameDialog.Show(Host, game)) Close();
     }
 
     void OnHideClick(object sender, RoutedEventArgs e)

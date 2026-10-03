@@ -15,7 +15,8 @@ internal static class Platforms
     /// </summary>
     public static void Match(IEnumerable<Game> games)
     {
-        foreach (var sameTitle in games.GroupBy(game => Key(game.Name)).Where(group => group.Key.Length > 0))
+        // A game added by hand is its own thing: it is never taken for the copy of a launcher's game.
+        foreach (var sameTitle in games.Where(game => game.Launcher != Launcher.Manual).GroupBy(game => Key(game.Name)).Where(group => group.Key.Length > 0))
         {
             var members = sameTitle.OrderBy(game => game.Launcher).ToList();
             var launchers = members.Select(game => game.Launcher).Distinct().ToArray();

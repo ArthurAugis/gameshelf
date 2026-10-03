@@ -35,8 +35,8 @@ internal static class CoverService
     public static Task<string?> EnsureLogoAsync(Game game) =>
         game.Launcher == Launcher.Epic
             ? EnsureEpicAsync(game, EpicLibrary.LogoArt, $"epic_{game.AppId}_logo.png")
-            : game.Launcher == Launcher.Gog
-                ? Task.FromResult<string?>(null) // Galaxy has no transparent title logo: the spine shows the title
+            : game.Launcher is Launcher.Gog or Launcher.Manual
+                ? Task.FromResult<string?>(null) // no transparent title logo: the spine shows the title
                 : EnsureAsync(game.AppId, SteamLibrary.LogoFile, $"{game.AppId}_logo.png");
 
     // One download per game, shared by whoever asks (a hover prefetch, then the details window).
@@ -50,6 +50,7 @@ internal static class CoverService
             {
                 Launcher.Epic => EnsureEpicAsync(game, EpicLibrary.WideArt, $"epic_{id}_hero.jpg"),
                 Launcher.Gog => EnsureGogAsync(game, GogLibrary.WideArt, $"gog_{id}_hero.jpg"),
+                Launcher.Manual => Task.FromResult<string?>(null), // the cover is all there is
                 _ => EnsureAsync(id, SteamLibrary.HeroFile, $"{id}_hero.jpg"),
             });
         // A missing hero is not remembered, so the next ask tries again.

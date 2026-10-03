@@ -62,6 +62,7 @@ internal sealed partial class MainWindow : Window
     {
         InitializeComponent();
         WindowPlacement.Restore(this);
+        ManualGames.Changed += () => Dispatcher.InvokeAsync(() => LoadAsync(offerExactMode: false)); // a game was added or removed by hand
         Closing += (_, _) => WindowPlacement.Save(this, fullscreen ? windowStateBeforeFullscreen == WindowState.Maximized : WindowState == WindowState.Maximized);
         DarkTitleBar.Apply(this);
         Loc.Apply(this);
@@ -126,6 +127,7 @@ internal sealed partial class MainWindow : Window
                 SteamMetadata.Fill(list); // genres, features, play time... for the search and filters (Steam only)
                 list.AddRange(EpicLibrary.Scan(epic));
                 list.AddRange(GogLibrary.Scan());
+                list.AddRange(ManualGames.Scan());
                 return list;
             });
             Platforms.Match(games); // the same title on several launchers: every logo on each cover
@@ -223,6 +225,8 @@ internal sealed partial class MainWindow : Window
         EpicButton.Visibility = EpicLibrary.IsLauncherInstalled || EpicClient.IsSignedIn ? Visibility.Visible : Visibility.Collapsed;
         EpicButton.Content = Loc.T(EpicClient.IsSignedIn ? "Sign out of Epic" : "Epic library");
     }
+
+    void OnAddGameClick(object sender, RoutedEventArgs e) => AddGameDialog.Show(this);
 
     /// <summary>
     /// Once per run, reads the Epic library again with the stored token, so new purchases show up on their own. The
@@ -676,7 +680,7 @@ internal sealed partial class MainWindow : Window
             .Select(group => (group.Key, group.Count()))
             .ToList();
         var features = SteamMetadata.AllFeatures.Where(f => ShelfSpines.Any(s => s.Game.Features.Contains(f))).ToList();
-        var launchers = ShelfSpines.SelectMany(s => s.Game.OwnedOn).Distinct().Order().Select(l => l.DisplayName()).ToList();
+        var launchers = ShelfSpines.SelectMany(s => s.Game.OwnedOn.Select(s.Game.LabelOf)).Distinct().Order().ToList();
         Filters.Bind(filter, genres, features, launchers);
     }
 

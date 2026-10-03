@@ -115,6 +115,8 @@
 
                 <WrapPanel x:Name="CollectionChips" Margin="0,16,0,0"/>
 
+                <Button x:Name="EditButton" Content="Edit this game" Style="{StaticResource LinkButton}" HorizontalAlignment="Left"
+                        Margin="-8,14,0,0" Visibility="Collapsed" Click="OnEditClick"/>
                 <Button x:Name="HideButton" Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Margin="-8,14,0,0"
                         Click="OnHideClick"/>
                 </StackPanel>

@@ -1,7 +1,7 @@
 namespace GameShelf.Models;
 
 /// <summary>Where a game comes from.</summary>
-internal enum Launcher { Steam, Epic, Gog }
+internal enum Launcher { Steam, Epic, Gog, Manual }
 
 internal static class LauncherExtensions
 {
@@ -10,6 +10,7 @@ internal static class LauncherExtensions
     {
         Launcher.Epic => "Epic Games",
         Launcher.Gog => "GOG Galaxy",
+        Launcher.Manual => Services.Loc.T("Added by hand"),
         _ => "Steam",
     };
 }
@@ -43,6 +44,12 @@ internal sealed record Game(uint AppId, string Name)
 
     /// <summary>Every entry of the same title across launchers, this one included; empty when the title is on one launcher only.</summary>
     public IReadOnlyList<Game> Siblings { get; set; } = Array.Empty<Game>();
+
+    /// <summary>For a game added by hand: the console it is for ("Wii"); null for a PC game or any other launcher's.</summary>
+    public string? Console { get; init; }
+
+    /// <summary>What to call <paramref name="launcher"/> for this game: the console's name when it was added by hand for one.</summary>
+    public string LabelOf(Launcher launcher) => launcher == Launcher.Manual && Console is not null ? Console : launcher.DisplayName();
 
     /// <summary>The launchers to show a logo for: at least the game's own.</summary>
     public IReadOnlyList<Launcher> OwnedOn => Platforms.Count > 0 ? Platforms : new[] { Launcher };

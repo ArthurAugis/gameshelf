@@ -60,10 +60,10 @@ internal sealed class ShelfFilter
         if (Status == StatusFilter.Installed && !game.Installed) return false;
         if (Status == StatusFilter.NotInstalled && game.Installed) return false;
 
-        if (Launchers.Count > 0 && !game.OwnedOn.Any(launcher => Launchers.Contains(launcher.DisplayName()))) return false;
+        if (Launchers.Count > 0 && !game.OwnedOn.Any(launcher => Launchers.Contains(game.LabelOf(launcher)))) return false;
 
         // Only Steam records play time: for the other launchers "played" and "never played" are unknown.
-        if (Play != PlayFilter.Any && game.Launcher != Launcher.Steam) return false;
+        if (Play != PlayFilter.Any && game.Launcher == Launcher.Epic) return false; // Epic's launcher keeps no play time
         if (Play == PlayFilter.Played && !game.HasBeenPlayed) return false;
         if (Play == PlayFilter.NeverPlayed && game.HasBeenPlayed) return false;
 

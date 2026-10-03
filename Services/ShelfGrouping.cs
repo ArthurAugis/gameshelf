@@ -67,7 +67,7 @@ internal static class ShelfGrouping
     {
         GroupMode.Genre => new[] { MainGenre(game) },
         GroupMode.Status => new[] { game.Installed ? "Installed" : "Not installed" },
-        GroupMode.Launcher => new[] { string.Join(" + ", game.OwnedOn.Select(launcher => launcher.DisplayName())) },
+        GroupMode.Launcher => new[] { string.Join(" + ", game.OwnedOn.Select(game.LabelOf)) },
         GroupMode.Year => new[] { game.ReleaseDate?.Year.ToString(CultureInfo.InvariantCulture) ?? UnknownYear },
         _ => CollectionsOf(game),
     };

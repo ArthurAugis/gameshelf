@@ -14,8 +14,9 @@
 </p>
 
 > GameShelf is an unofficial, community project. It is not affiliated with or endorsed by Valve, Epic Games, GOG,
-> Ubisoft or Electronic Arts. Steam, Epic Games, GOG.COM, Ubisoft and EA, and their logos (shown on the icon to say which
-> launchers GameShelf can read), are trademarks of their respective owners.
+> Ubisoft, Electronic Arts, Nintendo, Sony, Sega or Microsoft. Steam, Epic Games, GOG.COM, Ubisoft, EA, Nintendo, PlayStation,
+> Sega and Xbox, and their logos (shown on the icon and on the shelf to say which launcher or console a game is for), are
+> trademarks of their respective owners.
 
 ## Features
 
@@ -53,6 +54,13 @@
   at once. Steam's come from the app manifests on your PC (instant, no Steam client needed); GOG's from Galaxy's library file,
   by comparing the installed build with the newest one Galaxy knows (as fresh as Galaxy's last check, and its Update
   button opens the game's page in Galaxy); Epic's are read from the launcher while GameShelf controls it.
+- **Add any game by hand.** The **Add a game** button takes a program, a name and a console. Give it a shortcut (.lnk, or
+  drop one on the window) and its program and arguments are read from it. Give it Dolphin, PCSX2, DuckStation, RPCS3,
+  PPSSPP or Cemu and it asks for the game file (ISO, ROM) and writes the command line for you. The cover is searched by name (Steam's store for PC games, libretro's box art for the consoles:
+  Nintendo, PlayStation, Sega, Xbox...), taken from a picture file, dropped or pasted, or drawn from the program's
+  icon. The game wears its console's logo (Wii, PlayStation, Xbox...; the Game Boys and the Nintendo 64 borrow
+  Nintendo's, the Mega Drive, Saturn and Dreamcast Sega's). It starts like the others and its play time is how long the
+  program stays open.
 - **Platform logos.** Each spine, and the front of the 3D box, shows the logo of the launcher the game comes from.
   A game you own on several launchers (same title) is one spine with every logo; its page has a chip per launcher to
   switch between the versions (install, play and uninstall are per launcher). Your status, rating, note and
@@ -203,11 +211,12 @@ GameShelf only reads Steam's files. It writes here, in `%LOCALAPPDATA%\GameShelf
 | `no-update-check.txt` | Create it to turn off the check for new releases |
 | `install-folder.txt` | Last folder you installed to |
 | `epic-library.json` | Your Epic games, as last read |
+| `manual-games.json` | The games you added by hand (program, arguments, console, play time); their covers are in `covers` |
 | `epic-auth.bin` | Epic refresh token, encrypted for your Windows account |
 
 The network access is public, without any API key: Steam's servers for missing covers, logos and backdrops, and for
 the description, genres, developer, and release date of a game (the public store API), Epic's servers for
-the box art of Epic games, GOG's image server for the covers of GOG games, and GitHub's public API to look for a new release of GameShelf. The only sign-in is the
+the box art of Epic games, libretro's thumbnail server for the covers of consoles' games, GOG's image server for the covers of GOG games, and GitHub's public API to look for a new release of GameShelf. The only sign-in is the
 Epic one (see above), and you can sign out of it at any time.
 
 ### Shelf textures

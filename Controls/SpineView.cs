@@ -144,7 +144,7 @@ internal sealed class SpineView : Border
         var personal = new List<string>();
         if (note.Status != PlayStatus.None) personal.Add(Loc.T(note.Status.ToString()));
         if (note.Rating > 0) personal.Add($"{note.Rating}/{GameNotes.MaxRating}");
-        var platforms = string.Join(" + ", Game.OwnedOn.Select(launcher => launcher.DisplayName()));
+        var platforms = string.Join(" + ", Game.OwnedOn.Select(Game.LabelOf));
         return personal.Count == 0 ? $"{Game.Name}\n{platforms}" : $"{Game.Name}\n{platforms}\n{string.Join("  ·  ", personal)}";
     }
 
@@ -224,7 +224,7 @@ internal sealed class SpineView : Border
             BorderThickness = new Thickness(0, 1, 0, 0),
         };
         // The logo of each launcher the game is owned on, and the installed marker.
-        var content = PlatformLogos.Row(Game.OwnedOn, 11, 3);
+        var content = PlatformLogos.Row(Game.OwnedOn, 11, 3, Game.Console);
         content.HorizontalAlignment = HorizontalAlignment.Center;
         content.VerticalAlignment = VerticalAlignment.Center;
         if (Game.Installed) content.Children.Add(new Ellipse { Width = 8, Height = 8, Fill = Brushes.LimeGreen, Margin = new Thickness(5, 0, 0, 0) });

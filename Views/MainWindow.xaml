@@ -47,6 +47,8 @@
                                 Foreground="#d9b77a" BorderBrush="#99d9b77a" Click="OnExactLibraryClick"/>
                         <CheckBox x:Name="ShowHiddenToggle" Visibility="Collapsed" Foreground="#a39a8a" FontSize="12.5"
                                   VerticalAlignment="Center" Margin="0,0,22,0" Click="OnShowHiddenClick"/>
+                        <Button x:Name="AddGameButton" Content="Add a game" Margin="0,0,10,0"
+                                Style="{StaticResource SecondaryButton}" Height="30" FontSize="12.5" Click="OnAddGameClick"/>
                         <Button x:Name="EpicButton" Content="Epic library" Visibility="Collapsed" Margin="0,0,10,0"
                                 Style="{StaticResource SecondaryButton}" Height="30" FontSize="12.5"
                                 Foreground="#d9b77a" BorderBrush="#99d9b77a" Click="OnEpicClick"/>
