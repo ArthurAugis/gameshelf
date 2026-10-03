@@ -4,6 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ctl="clr-namespace:GameShelf.Controls"
         Title="GameShelf" Height="800" Width="1280" Background="#111" Icon="/Assets/logo.png"
+        MinWidth="820" MinHeight="520" SizeChanged="OnWindowSizeChanged"
         PreviewKeyDown="OnPreviewKeyDown" PreviewMouseMove="OnPreviewMouseMove">
     <Grid>
         <!-- Header and shelf -->
@@ -25,21 +26,26 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source="/Assets/logo.png" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
-                        <TextBlock Text="GameShelf" FontFamily="Georgia" FontSize="23" Foreground="#d9b77a" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TitleLabel" Text="GameShelf" FontFamily="Georgia" FontSize="23" Foreground="#d9b77a"
+                                   VerticalAlignment="Center" ToolTip="{Binding Text, ElementName=StatusText}"/>
                         <TextBlock x:Name="StatusText" Foreground="#8a8378" FontSize="12.5" VerticalAlignment="Center" Margin="20,3,0,0"/>
                     </StackPanel>
 
-                    <!-- Search and filters -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                Margin="24,0">
-                        <ctl:SearchBox x:Name="Search" Width="340"/>
-                        <Button x:Name="FiltersButton" Content="Filters" Style="{StaticResource SecondaryButton}" Height="36"
-                                Padding="16,0" Margin="10,0,0,0" Click="OnFiltersClick"/>
-                        <Popup x:Name="FilterPopup" PlacementTarget="{Binding ElementName=FiltersButton}" Placement="Bottom"
-                               StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Closed="OnFilterPopupClosed">
+                    <!-- Search and filters: the search takes what is left, up to 340 px -->
+                    <Grid Grid.Column="1" MaxWidth="450" VerticalAlignment="Center" Margin="24,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="130"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ctl:SearchBox x:Name="Search"/>
+                        <Button x:Name="FiltersButton" Grid.Column="1" Content="Filters" Style="{StaticResource SecondaryButton}"
+                                Height="36" Padding="16,0" Margin="10,0,0,0" Click="OnFiltersClick"/>
+                        <Popup x:Name="FilterPopup" Grid.Column="1" PlacementTarget="{Binding ElementName=FiltersButton}"
+                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+                               Closed="OnFilterPopupClosed">
                             <ctl:FilterPanel x:Name="Filters" Margin="14,6,14,22"/>
                         </Popup>
-                    </StackPanel>
+                    </Grid>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="ExactButton" Content="Enable exact library" Visibility="Collapsed" Margin="0,0,22,0"
@@ -70,7 +76,7 @@
                                 <StackPanel x:Name="LanguageChips"/>
                             </Border>
                         </Popup>
-                        <TextBlock Text="SHELF" Foreground="#6f675b" FontSize="10.5" FontWeight="SemiBold"
+                        <TextBlock x:Name="ShelfLabel" Text="SHELF" Foreground="#6f675b" FontSize="10.5" FontWeight="SemiBold"
                                    VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <StackPanel x:Name="SkinChips" Orientation="Horizontal" VerticalAlignment="Center"/>
                     </StackPanel>

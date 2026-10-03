@@ -3,7 +3,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="clr-namespace:GameShelf.Controls"
-             Background="#121110" Focusable="True" PreviewKeyDown="OnPreviewKeyDown">
+             Background="#121110" Focusable="True" PreviewKeyDown="OnPreviewKeyDown" SizeChanged="OnSizeChanged">
     <Grid ClipToBounds="True">
         <!-- Blurred hero artwork, fading into the background -->
         <Image x:Name="Backdrop" Stretch="UniformToFill" VerticalAlignment="Top" Height="440" Margin="-40,-40,-40,0" Opacity="0">
@@ -20,9 +20,9 @@
             </Rectangle.Fill>
         </Rectangle>
 
-        <Grid Margin="48,56,48,32" MaxWidth="1100">
+        <Grid x:Name="PageGrid" Margin="48,56,48,32" MaxWidth="1100">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340"/>
+                <ColumnDefinition x:Name="StageColumn" Width="340"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -49,7 +49,7 @@
 
                 <!-- Key facts -->
                 <Border BorderBrush="#33FFFFFF" BorderThickness="0,1" Margin="0,26,0,0" Padding="0,16">
-                    <UniformGrid Columns="4">
+                    <UniformGrid x:Name="Facts" Columns="4">
                         <StackPanel>
                             <TextBlock Text="STATUS" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold"/>
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
@@ -81,22 +81,22 @@
                     <ProgressBar x:Name="InstallBar" Height="8" Margin="0,10,0,0" Minimum="0" Maximum="100"
                                  Background="#2a2622" Foreground="#4c9b3a" BorderThickness="0"/>
                     <ctl:SpeedGraph x:Name="SpeedChart" Height="72" Margin="0,12,0,0"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <WrapPanel Margin="0,14,0,0">
                         <Button x:Name="PauseButton" Content="Pause" Style="{StaticResource SecondaryButton}" Height="36"
                                 MinWidth="110" Margin="0,0,8,0" Click="OnPauseClick"/>
                         <Button Content="Cancel download" Style="{StaticResource LinkButton}"
                                 Click="OnCancelInstallClick"/>
-                    </StackPanel>
+                    </WrapPanel>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Margin="0,24,0,0">
+                <WrapPanel Margin="0,24,0,0">
                     <Button x:Name="PlayButton" Content="Play" Style="{StaticResource PrimaryButton}" Height="46" MinWidth="170"
                             Margin="0,0,10,0" Click="OnPlayClick"/>
                     <Button x:Name="InstallButton" Content="Install" Style="{StaticResource PrimaryButton}" Background="#2d6fb3"
                             Height="46" MinWidth="170" Margin="0,0,10,0" Click="OnInstallClick"/>
                     <Button x:Name="UninstallButton" Content="Uninstall" Style="{StaticResource SecondaryButton}" Height="46"
                             Click="OnUninstallClick"/>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- Personal status, rating and note -->
                 <Grid Margin="0,22,0,0">

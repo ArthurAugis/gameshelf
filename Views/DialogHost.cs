@@ -36,7 +36,13 @@ internal static class DialogHost
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(24),
-            Child = dialog,
+            // In a short window a tall dialog scrolls instead of being cut off.
+            Child = new ScrollViewer
+            {
+                Content = dialog,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            },
         };
         // The backdrop takes the mouse, so nothing behind the dialog can be clicked.
         var backdrop = new Grid { Background = new SolidColorBrush(Color.FromArgb(175, 0, 0, 0)), Children = { card } };
@@ -59,7 +65,8 @@ internal static class DialogHost
         if (entry is null) return;
 
         Open.Remove(entry);
-        entry.Backdrop.Children.Clear(); // the dialog goes back to having no parent
+        if (entry.Dialog.Parent is ScrollViewer holder) holder.Content = null; // the dialog goes back to having no parent
+        entry.Backdrop.Children.Clear();
         entry.Layer.Children.Remove(entry.Backdrop);
         if (Open.Count == 0) entry.Layer.Visibility = Visibility.Collapsed;
         entry.Frame.Continue = false;

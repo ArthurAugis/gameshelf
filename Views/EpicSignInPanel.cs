@@ -29,7 +29,7 @@ internal sealed class EpicSignInPanel : Grid
     EpicSignInPanel()
     {
         Width = 520;
-        Height = 700;
+        Height = Math.Min(700, SystemParameters.WorkArea.Height - 120); // a small screen gets a shorter panel
         Background = new SolidColorBrush(Color.FromRgb(0x18, 0x16, 0x14));
         RowDefinitions.Add(new RowDefinition { Height = new GridLength(44) });
         RowDefinitions.Add(new RowDefinition());

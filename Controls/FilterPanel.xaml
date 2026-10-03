@@ -7,6 +7,7 @@
         <Border.Effect>
             <DropShadowEffect BlurRadius="22" ShadowDepth="6" Opacity="0.55"/>
         </Border.Effect>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
             <TextBlock Text="SORT BY" Foreground="#7a7367" FontSize="10.5" FontWeight="SemiBold" Margin="0,0,0,8"/>
             <WrapPanel x:Name="SortChips"/>
@@ -42,5 +43,6 @@
                 <Button Content="Clear all" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Click="OnClearAllClick"/>
             </Grid>
         </StackPanel>
+        </ScrollViewer>
     </Border>
 </UserControl>

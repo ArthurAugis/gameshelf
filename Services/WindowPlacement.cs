@@ -7,7 +7,7 @@ namespace GameShelf.Services;
 internal static class WindowPlacement
 {
     const string FileName = "window.json";
-    const double MinWidth = 640, MinHeight = 400;
+    const double MinWidth = 820, MinHeight = 520; // the main window's own minimum (MainWindow.xaml)
 
     sealed record Saved(double Left, double Top, double Width, double Height, bool Maximized);
 

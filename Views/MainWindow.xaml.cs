@@ -6,7 +6,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
 using System.Windows.Threading;
 using GameShelf.Controls;
 using GameShelf.Launchers;
@@ -62,6 +61,8 @@ internal sealed partial class MainWindow : Window
     {
         InitializeComponent();
         WindowPlacement.Restore(this);
+        Width = Math.Min(Width, SystemParameters.WorkArea.Width); // a small screen
+        Height = Math.Min(Height, SystemParameters.WorkArea.Height);
         ManualGames.Changed += () => Dispatcher.InvokeAsync(RefreshManualGamesAsync); // a game was added, changed or removed by hand
         Closing += (_, _) => WindowPlacement.Save(this, fullscreen ? windowStateBeforeFullscreen == WindowState.Maximized : WindowState == WindowState.Maximized);
         DarkTitleBar.Apply(this);
@@ -738,6 +739,7 @@ internal sealed partial class MainWindow : Window
     {
         // A click outside a popup closes it before the click lands: without this, the button would reopen it at once.
         if (DateTime.UtcNow - filterPopupClosedAt < TimeSpan.FromMilliseconds(250)) return;
+        Filters.MaxHeight = Math.Max(240, ActualHeight - 160); // the panel scrolls in a short window
         FilterPopup.IsOpen = !FilterPopup.IsOpen;
     }
 
@@ -785,149 +787,6 @@ internal sealed partial class MainWindow : Window
         }
     }
 
-    // ---- Keyboard and controller navigation ----
-
-    double ShelfScale => fullscreen ? FullscreenScale : 1;
-
-    /// <summary>Handles an arrow key or Enter. False if the key is not for the shelf.</summary>
-    bool TryNavigate(Key key)
-    {
-        switch (key)
-        {
-            case Key.Left: MoveFocus(-1, 0); return true;
-            case Key.Right: MoveFocus(1, 0); return true;
-            case Key.Up: MoveFocus(0, -1); return true;
-            case Key.Down: MoveFocus(0, 1); return true;
-            case Key.Enter when focused is not null:
-                OpenDetails(focused);
-                return true;
-            default: return false;
-        }
-    }
-
-    void OnGamepadPressed(PadButton button)
-    {
-        if (!IsActive || detail is not null || DialogHost.IsOpen || Splash.Visibility == Visibility.Visible) return;
-        switch (button)
-        {
-            case PadButton.Left: MoveFocus(-1, 0); break;
-            case PadButton.Right: MoveFocus(1, 0); break;
-            case PadButton.Up: MoveFocus(0, -1); break;
-            case PadButton.Down: MoveFocus(0, 1); break;
-            case PadButton.A when focused is not null: OpenDetails(focused); break;
-            case PadButton.Y: ToggleFullscreen(); break;
-            case PadButton.LeftBumper: CycleCollection(-1); break;
-            case PadButton.RightBumper: CycleCollection(1); break;
-        }
-    }
-
-    /// <summary>
-    /// Moves the chosen spine one place along a row or to the row above or below. The first press only
-    /// chooses the first game.
-    /// </summary>
-    void MoveFocus(int columns, int rows)
-    {
-        if (layoutRows.Count == 0) return;
-        if (focused is null)
-        {
-            SetFocus(layoutRows[0][0]);
-            return;
-        }
-
-        int row = layoutRows.FindIndex(r => r.Contains(focused));
-        if (row < 0)
-        {
-            SetFocus(layoutRows[0][0]);
-            return;
-        }
-        int column = layoutRows[row].IndexOf(focused);
-
-        row = Math.Clamp(row + rows, 0, layoutRows.Count - 1);
-        column = Math.Clamp(column + columns, 0, layoutRows[row].Count - 1);
-        SetFocus(layoutRows[row][column]);
-    }
-
-    void SetFocus(SpineView? spine, bool scrollIntoView = true)
-    {
-        focused?.SetFocused(false);
-        focused = spine;
-        if (spine is null)
-        {
-            FocusBar.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        spine.SetFocused(true);
-        if (scrollIntoView) spine.BringIntoView(new Rect(-30, -40, SpineView.SpineWidth + 60, SpineView.SpineHeight + 120));
-        FocusTitle.Text = spine.Game.Name;
-        FocusHint.Text = Loc.T("Enter / A: open");
-        FocusBar.Visibility = Visibility.Visible;
-    }
-
-    /// <summary>After the shelf was rebuilt the chosen game has new spines (and maybe moved): find it again.</summary>
-    void RestoreFocus()
-    {
-        var previous = focused;
-        focused = null;
-        var match = previous is null ? null : layoutRows.SelectMany(r => r).FirstOrDefault(s => s.Game.AppId == previous.Game.AppId);
-        SetFocus(match, scrollIntoView: false);
-    }
-
-    /// <summary>The mouse takes over again: drop the keyboard choice.</summary>
-    void OnPreviewMouseMove(object sender, MouseEventArgs e)
-    {
-        var position = e.GetPosition(this);
-        if (focused is not null && (position - lastMousePosition).Length > 6) SetFocus(null);
-        lastMousePosition = position;
-    }
-
-    /// <summary>Selects the next or previous collection (All games, then each collection).</summary>
-    void CycleCollection(int step)
-    {
-        var choices = new List<string?> { null };
-        choices.AddRange(GameCollections.Names);
-        int index = Math.Max(0, choices.IndexOf(filter.Collection));
-        filter.Collection = choices[(index + step + choices.Count) % choices.Count];
-        BuildCollectionBar();
-        RebuildShelf();
-    }
-
-    // ---- Fullscreen ----
-
-    /// <summary>Fullscreen shows bigger spines, to read from a sofa. F11, Y on the controller, or --bigpicture.</summary>
-    void ToggleFullscreen()
-    {
-        fullscreen = !fullscreen;
-        if (fullscreen)
-        {
-            windowStateBeforeFullscreen = WindowState;
-            WindowState = WindowState.Normal; // a maximized window must be restored before its frame can be removed
-            WindowStyle = WindowStyle.None;
-            WindowState = WindowState.Maximized;
-        }
-        else
-        {
-            WindowStyle = WindowStyle.SingleBorderWindow;
-            WindowState = windowStateBeforeFullscreen;
-        }
-        ShelfRows.LayoutTransform = new ScaleTransform(ShelfScale, ShelfScale);
-        RebuildShelf();
-    }
-
-    Border CreatePlank() => new()
-    {
-        Height = 26,
-        Margin = new Thickness(-14, 0, -14, 34),
-        Background = skin.Plank,
-        Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 5, Opacity = 0.65 },
-        Child = new Border // light edge on top of the plank
-        {
-            Height = 5,
-            VerticalAlignment = VerticalAlignment.Top,
-            Background = new LinearGradientBrush(Color.FromArgb(90, 255, 255, 255), Colors.Transparent, 90),
-        },
-    };
-
     // ---- Updates ----
 
     /// <summary>Shows the "Update" button in the header when a newer release exists.</summary>
@@ -958,147 +817,6 @@ internal sealed partial class MainWindow : Window
         UpdateButton.IsEnabled = true;
         UpdateButton.Content = Loc.T("Update to v{0}", version);
         MessageDialog.Info(this, Loc.T("The update could not be downloaded"), Loc.T("Check your connection and try again."));
-    }
-
-    // ---- Language ----
-
-    void OnLanguageClick(object sender, RoutedEventArgs e)
-    {
-        if (DateTime.UtcNow - languagePopupClosedAt < TimeSpan.FromMilliseconds(250)) return; // see OnFiltersClick
-        LanguagePopup.IsOpen = !LanguagePopup.IsOpen;
-    }
-
-    void OnLanguagePopupClosed(object? sender, EventArgs e) => languagePopupClosedAt = DateTime.UtcNow;
-
-    void BuildLanguageChips()
-    {
-        foreach (var language in Loc.Languages)
-        {
-            var label = new StackPanel { Orientation = Orientation.Horizontal };
-            label.Children.Add(Flags.Create(language.Code, 13));
-            label.Children.Add(new TextBlock { Text = language.NativeName, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
-            var chip = new ToggleButton { Content = label, Style = ChipStyle, IsChecked = language == Loc.Current };
-            chip.Click += (_, _) => ChooseLanguage(language);
-            LanguageChips.Children.Add(chip);
-        }
-    }
-
-    /// <summary>Saves the language. The texts are read when the windows are built, so the app restarts to apply it.</summary>
-    void ChooseLanguage(Language language)
-    {
-        LanguagePopup.IsOpen = false;
-        if (language == Loc.Current) return;
-
-        Loc.Save(language);
-        // The dialog is shown in the language being left: it tells the user what happens next in the new one.
-        if (!MessageDialog.Confirm(this, Loc.T("Restart GameShelf?"),
-                Loc.T("GameShelf restarts to switch to {0}.", language.NativeName), Loc.T("Restart"), Loc.T("Later")))
-            return;
-
-        Process.Start(new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true });
-        Application.Current.Shutdown();
-    }
-
-    // ---- Skins ----
-
-    /// <summary>One round texture chip per skin in the header, and a "+" chip to import a texture.</summary>
-    void BuildSkinChips()
-    {
-        SkinChips.Children.Clear();
-        foreach (var name in Skins.Names) SkinChips.Children.Add(CreateSkinChip(name));
-
-        var add = CreateChip(null, Loc.T("Import a texture  ·  a picture of wood, stone, fabric..."));
-        add.Background = Brushes.Transparent;
-        add.Child = new TextBlock
-        {
-            Text = "+",
-            Foreground = new SolidColorBrush(Color.FromArgb(0xb0, 255, 255, 255)),
-            FontSize = 15,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = new Thickness(0, -2, 0, 0),
-        };
-        add.MouseLeftButtonUp += (_, _) => ImportSkin();
-        SkinChips.Children.Add(add);
-    }
-
-    Border CreateSkinChip(string name)
-    {
-        var chip = CreateChip(name, Skins.IsImported(name) ? Loc.T("{0}  ·  right-click to delete", name) : Loc.T(name));
-        chip.Background = Skins.Get(name).Plank;
-        chip.MouseLeftButtonUp += (_, _) => SelectSkin(name);
-        if (Skins.IsImported(name)) chip.MouseRightButtonUp += (_, _) => DeleteSkin(name);
-        return chip;
-    }
-
-    /// <summary>A round chip. <paramref name="skinName"/> goes in Tag, so the selected one can be found again.</summary>
-    static Border CreateChip(string? skinName, string tooltip) => new()
-    {
-        Width = 24,
-        Height = 24,
-        CornerRadius = new CornerRadius(12),
-        Margin = new Thickness(4, 0, 0, 0),
-        BorderThickness = new Thickness(2),
-        BorderBrush = new SolidColorBrush(Color.FromArgb(0x44, 255, 255, 255)),
-        Cursor = Cursors.Hand,
-        Tag = skinName,
-        ToolTip = tooltip,
-    };
-
-    void SelectSkin(string name)
-    {
-        skinName = name;
-        ApplySkin();
-        RebuildShelf();
-        AppData.WriteText(SkinSetting, name);
-    }
-
-    void ImportSkin()
-    {
-        var picker = new Microsoft.Win32.OpenFileDialog
-        {
-            Title = Loc.T("Choose a picture to use as the shelf texture"),
-            Filter = $"{Loc.T("Pictures")}|*.png;*.jpg;*.jpeg;*.bmp",
-        };
-        if (picker.ShowDialog(this) != true) return;
-
-        var name = InputDialog.Ask(this, Loc.T("Name this shelf"), Loc.T("Add"), Skins.Validate,
-            initialText: System.IO.Path.GetFileNameWithoutExtension(picker.FileName));
-        if (name is null) return;
-
-        try
-        {
-            Skins.Import(name, picker.FileName);
-        }
-        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
-        {
-            MessageDialog.Info(this, Loc.T("Could not import the texture"), e.Message);
-            return;
-        }
-        BuildSkinChips();
-        SelectSkin(name);
-    }
-
-    void DeleteSkin(string name)
-    {
-        if (!MessageDialog.Confirm(this, Loc.T("Delete the shelf \"{0}\"?", name),
-                Loc.T("Its texture is removed from GameShelf. Your original picture is not touched."), Loc.T("Delete"),
-                destructive: true))
-            return;
-
-        Skins.Delete(name);
-        BuildSkinChips();
-        SelectSkin(skinName == name ? Skins.Names[0] : skinName);
-    }
-
-    void ApplySkin()
-    {
-        skin = Skins.Get(skinName);
-        ShelfScroll.Background = skin.Wall;
-
-        var selected = new SolidColorBrush(Color.FromRgb(0xd9, 0xb7, 0x7a));
-        var unselected = new SolidColorBrush(Color.FromArgb(0x44, 255, 255, 255));
-        foreach (var chip in SkinChips.Children.OfType<Border>().Where(chip => chip.Tag is not null))
-            chip.BorderBrush = (string)chip.Tag == skinName ? selected : unselected;
     }
 
     // ---- Events ----
@@ -1145,6 +863,17 @@ internal sealed partial class MainWindow : Window
 
     async void OnExactLibraryClick(object sender, RoutedEventArgs e) =>
         await LoadAsync(offerExactMode: true, ignoreNeverAskAgain: true);
+
+    /// <summary>The header drops its extras as the window narrows (the counts stay in the title's tooltip), so nothing overlaps.</summary>
+    void OnWindowSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        static Visibility ShownFrom(double width, double breakpoint) => width >= breakpoint ? Visibility.Visible : Visibility.Collapsed;
+        double width = e.NewSize.Width;
+        StatusText.Visibility = ShownFrom(width, 1350);
+        ShelfLabel.Visibility = ShownFrom(width, 1150);
+        TitleLabel.Visibility = ShownFrom(width, 1000);
+        SkinChips.Visibility = ShownFrom(width, 900);
+    }
 
     void OnShelfSizeChanged(object sender, SizeChangedEventArgs e)
     {

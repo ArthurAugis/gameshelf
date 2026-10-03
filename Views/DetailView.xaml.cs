@@ -27,6 +27,7 @@ internal sealed partial class DetailView : UserControl
     const int MaxTitleLength = 90, LongTitleLength = 40; // a title longer than this is cut, or shown smaller
     static readonly TimeSpan SyncInterval = TimeSpan.FromMilliseconds(1500);
     static readonly TimeSpan StartGracePeriod = TimeSpan.FromSeconds(20);
+    const double NarrowPageWidth = 1000;
 
     Game game;
     GameBoxView box;
@@ -76,6 +77,17 @@ internal sealed partial class DetailView : UserControl
             // Ready before the user clicks Install, so the disk choice opens at once.
             if (!game.Installed && !installing && game.Launcher == Launcher.Steam) PreparePlan();
         };
+    }
+
+    /// <summary>A narrow window gives the box and the margins less room and puts the key facts two by two.</summary>
+    void OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        bool narrow = e.NewSize.Width < NarrowPageWidth;
+        StageColumn.Width = new GridLength(narrow ? 250 : 340);
+        PageGrid.Margin = narrow ? new Thickness(24, 56, 24, 24) : new Thickness(48, 56, 48, 32);
+        Facts.Columns = narrow ? 2 : 4;
+        Glow.Width = Glow.Height = narrow ? 360 : 480;
+        Glow.Margin = new Thickness(narrow ? -55 : -70, 0, 0, 0);
     }
 
     /// <summary>The game this page shows.</summary>
