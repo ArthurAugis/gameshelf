@@ -555,37 +555,8 @@ internal sealed partial class DetailView : UserControl
         installStartedAt = null;
         watchProgress = false;
         installing = false;
-        if (game.Launcher == Launcher.Epic) await RemoveEpicLeftoversAsync();
+        epicStopped = false;
         ApplyInstallState();
-    }
-
-    /// <summary>
-    /// The launcher keeps what it downloaded when a download is cancelled: have it remove that, and wait for it to be
-    /// gone. If something is left (the launcher did not take it), the page shows the game as partly downloaded with a
-    /// button to delete the files.
-    /// </summary>
-    async Task RemoveEpicLeftoversAsync()
-    {
-        if (EpicLibrary.IdentityOf(game.AppId) is not { } epic) return;
-        await Task.Delay(1500); // the launcher takes a moment to settle
-        if (await EpicBridge.GetStateAsync(epic) is { } state && EpicBridge.IsStopped(state))
-        {
-            await EpicBridge.UninstallAsync(epic);
-            for (int i = 0; i < 30 && !closed; i++)
-            {
-                await Task.Delay(1000);
-                if (await EpicBridge.GetStateAsync(epic) is { PartiallyInstalled: false }) break;
-            }
-        }
-        await CheckEpicLeftoversAsync();
-    }
-
-    /// <summary>After an Epic download was stopped the launcher keeps what it downloaded: ask whether anything is left.</summary>
-    async Task CheckEpicLeftoversAsync()
-    {
-        if (EpicLibrary.IdentityOf(game.AppId) is not { } epic) return;
-        await Task.Delay(1500); // the launcher takes a moment to settle
-        if (await EpicBridge.GetStateAsync(epic) is { } state) epicStopped = EpicBridge.IsStopped(state);
     }
 
     // ---- Epic: installing and removing through the launcher ----
@@ -673,9 +644,9 @@ internal sealed partial class DetailView : UserControl
 
     async Task UninstallEpicAsync()
     {
-        if (EpicLibrary.IdentityOf(game.AppId) is not { } epic || !await EnsureEpicBridgeAsync())
+        if (EpicLibrary.IdentityOf(game.AppId) is not { } epic)
         {
-            OpenUri(EpicLibrary.LibraryUri); // without the bridge, removing a game is done in the launcher
+            OpenUri(EpicLibrary.LibraryUri);
             return;
         }
         bool leftovers = epicStopped && !game.Installed;
@@ -689,20 +660,17 @@ internal sealed partial class DetailView : UserControl
         UninstallButton.IsEnabled = false;
         try
         {
-            if (!await EpicBridge.UninstallAsync(epic)) return;
-            for (int i = 0; i < 60 && !closed; i++) // the launcher removes the files in the background
+            if (!await Task.Run(() => EpicBridge.UninstallAsync(epic)))
             {
-                await Task.Delay(1000);
-                if (await EpicBridge.GetStateAsync(epic) is { Installed: false, PartiallyInstalled: false })
-                {
-                    epicStopped = false;
-                    game.Installed = false;
-                    game.SizeOnDisk = 0;
-                    game.InstallDir = null;
-                    ApplyInstallState();
-                    return;
-                }
+                MessageDialog.Info(Host, Loc.T("Could not uninstall the game"),
+                    Loc.T("Some files could not be deleted. Close the game and try again."));
+                return;
             }
+            epicStopped = false;
+            game.Installed = false;
+            game.SizeOnDisk = 0;
+            game.InstallDir = null;
+            ApplyInstallState();
         }
         finally
         {
@@ -717,7 +685,6 @@ internal sealed partial class DetailView : UserControl
         epicStopped = EpicBridge.IsStopped(state) && !epicPaused && !state.StatusText.Contains("paus", StringComparison.OrdinalIgnoreCase);
         if (state.Installed && !state.Installing)
         {
-            if (!game.Installed) _ = EpicBridge.CloseWhenIdleAsync(); // the launcher was only needed for the download
             game.Installed = true;
             game.InstallDir = state.InstallLocation;
             game.SizeOnDisk = state.SizeOnDisk;

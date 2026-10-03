@@ -31,6 +31,22 @@ internal static class Cdp
         }
     }
 
+    /// <summary>True when something answers on the debug port, even if it has no page open.</summary>
+    public static async Task<bool> IsListeningAsync(int port)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            using var http = new HttpClient();
+            await http.GetStringAsync($"http://127.0.0.1:{port}/json", timeout.Token);
+            return true;
+        }
+        catch (Exception e) when (IsConnectionFailure(e))
+        {
+            return false;
+        }
+    }
+
     /// <summary>
     /// Runs <paramref name="script"/> in the page (an async script is awaited) and returns the string it returns.
     /// Null when the page is gone, the script threw, or it returned something other than a string.

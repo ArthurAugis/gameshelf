@@ -137,6 +137,37 @@ internal static class EpicLibrary
         return result;
     }
 
+    /// <summary>
+    /// Removes a game's files and its manifest, which is all the launcher does to uninstall (its own confirmation
+    /// box cannot be answered from outside). Only a folder holding the launcher's .egstore data is deleted. False if
+    /// nothing was found or a file is in use; the launcher keeps showing the game until it is restarted.
+    /// </summary>
+    public static bool RemoveInstall(string appName)
+    {
+        var folder = Path.Combine(DataPath, "Manifests");
+        if (!Directory.Exists(folder)) return false;
+        foreach (var file in Directory.GetFiles(folder, "*.item", SearchOption.AllDirectories)) // a download in progress may be filed in a sub-folder
+        {
+            try
+            {
+                string? location;
+                using (var document = JsonDocument.Parse(File.ReadAllText(file)))
+                {
+                    if (Text(document.RootElement, "AppName") != appName) continue;
+                    location = Text(document.RootElement, "InstallLocation");
+                }
+                if (location is { Length: > 0 } && Directory.Exists(Path.Combine(location, ".egstore"))) Directory.Delete(location, true);
+                File.Delete(file);
+                return true;
+            }
+            catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
     static Manifest? ReadManifest(string file)
     {
         try

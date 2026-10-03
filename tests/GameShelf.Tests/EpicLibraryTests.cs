@@ -234,5 +234,25 @@ public sealed class EpicLibraryTests : IDisposable
         Assert.Equal("abc123", EpicClient.ExtractCode("""{"redirectUrl":"https://x","authorizationCode":"abc123","sid":null}"""));
     }
 
+    [Fact]
+    public void RemoveInstall_DeletesTheFilesAndTheManifestOfAnEpicInstallOnly()
+    {
+        var epicGame = Path.Combine(root, "games", "A");
+        var foreignFolder = Path.Combine(root, "games", "B");
+        Directory.CreateDirectory(Path.Combine(epicGame, ".egstore"));
+        Directory.CreateDirectory(foreignFolder);
+        File.WriteAllText(Path.Combine(foreignFolder, "keep.txt"), "x");
+        Manifest("a.item", $$"""{"AppName":"a","DisplayName":"A","InstallLocation":{{System.Text.Json.JsonSerializer.Serialize(epicGame)}}}""");
+        Manifest("b.item", $$"""{"AppName":"b","DisplayName":"B","InstallLocation":{{System.Text.Json.JsonSerializer.Serialize(foreignFolder)}}}""");
+
+        Assert.True(EpicLibrary.RemoveInstall("a"));
+        Assert.False(Directory.Exists(epicGame));
+        Assert.False(File.Exists(Path.Combine(root, "Manifests", "a.item")));
+
+        Assert.True(EpicLibrary.RemoveInstall("b")); // the manifest goes, a folder that is not an Epic install stays
+        Assert.True(File.Exists(Path.Combine(foreignFolder, "keep.txt")));
+        Assert.False(EpicLibrary.RemoveInstall("missing"));
+    }
+
     void Manifest(string name, string json) => File.WriteAllText(Path.Combine(root, "Manifests", name), json);
 }

@@ -11,7 +11,7 @@
   <Package Name="GameShelf" Manufacturer="GameShelf contributors" Version="$(Version)"
            UpgradeCode="6f1c3a52-8d0e-4b7a-9c41-2a5e7f0b9d13" Scope="perUser" InstallerVersion="500">
 
-    <SummaryInformation Description="A virtual bookshelf for your Steam library." />
+    <SummaryInformation Description="A virtual bookshelf for your Steam and Epic Games library." />
     <MajorUpgrade DowngradeErrorMessage="A newer version of GameShelf is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 

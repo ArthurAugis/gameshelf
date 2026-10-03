@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using GameShelf.Models;
+using Microsoft.Win32;
 using GameShelf.Services;
 
 namespace GameShelf.Launchers;
@@ -39,8 +41,9 @@ internal static class EpicBridge
 
     static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(20);
 
-    // True once GameShelf has started the launcher itself: only then does it close it again (see CloseWhenIdleAsync).
-    static bool startedByGameShelf;
+    static bool watchingQueue;
+    static DateTime lastRevive = DateTime.MinValue;
+    const int ShowMinimizedNoActivate = 7;
 
     /// <summary>
     /// Debug port used when GameShelf starts the launcher: random, picked once per install. Obscurity only: any
@@ -58,14 +61,53 @@ internal static class EpicBridge
     }
 
     /// <summary>True when the launcher runs with its debug port open and its store page is loaded.</summary>
-    public static async Task<bool> IsReachableAsync() => await Cdp.FindPageAsync(Port, IsStorePage) is not null;
+    public static async Task<bool> IsReachableAsync() => await FindStorePageAsync() is not null;
+
+    /// <summary>
+    /// The store page's web socket. When the launcher runs in debug mode but its window was closed to the notification
+    /// area, its page is gone: the launcher is asked to show its window again (a second start only does that), then
+    /// the window is minimized to the task bar, where the page stays alive. Tried at most every 30 seconds.
+    /// </summary>
+    static async Task<string?> FindStorePageAsync()
+    {
+        if (Process.GetProcessesByName("EpicGamesLauncher").Length == 0) return null; // not running: no need to wait for a closed port
+        if (await Cdp.FindPageAsync(Port, IsStorePage) is { } socketUrl) return socketUrl;
+        if (DateTime.UtcNow - lastRevive < TimeSpan.FromSeconds(30) || !await Cdp.IsListeningAsync(Port)) return null;
+        lastRevive = DateTime.UtcNow;
+
+        var exe = Process.GetProcessesByName("EpicGamesLauncher").Select(ExePathOf).FirstOrDefault(path => path is not null);
+        if (exe is null) return null;
+        Process.Start(new ProcessStartInfo(exe, $"-cefdebug={Port}") { UseShellExecute = false });
+        for (int i = 0; i < 10; i++)
+        {
+            await Task.Delay(2000);
+            // Still no window: ask Windows to open the launcher through its own link, as clicking a launcher link does.
+            if (i == 2) Process.Start(new ProcessStartInfo(EpicLibrary.LibraryUri) { UseShellExecute = true });
+            if (await Cdp.FindPageAsync(Port, IsStorePage) is { } revived)
+            {
+                MinimizeLauncher();
+                return revived;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Puts the launcher's window in the task bar without taking the focus.</summary>
+    static void MinimizeLauncher()
+    {
+        foreach (var process in Process.GetProcessesByName("EpicGamesLauncher"))
+            if (process.MainWindowHandle != IntPtr.Zero) ShowWindow(process.MainWindowHandle, ShowMinimizedNoActivate);
+    }
+
+    [DllImport("user32.dll")]
+    static extern bool ShowWindow(IntPtr window, int command);
 
     /// <summary>Closes the launcher if it runs and starts it again with the debug port. False if it cannot be found.</summary>
     public static async Task<bool> RestartWithDebugPortAsync()
     {
         var running = Process.GetProcessesByName("EpicGamesLauncher");
         var exe = running.Select(ExePathOf).FirstOrDefault(path => path is not null)
-            ?? (File.Exists(DefaultLauncherExe) ? DefaultLauncherExe : null);
+            ?? InstalledLauncherExe();
         if (exe is null) return false;
 
         // The launcher keeps no unsaved work, and it has no "quit" command line: end it and its web helpers.
@@ -80,15 +122,15 @@ internal static class EpicBridge
                 // Already gone, or not ours to end.
             }
         }
-        await Task.Delay(3000);
+        if (running.Length > 0) await Task.Delay(3000); // let it finish ending
         Process.Start(new ProcessStartInfo(exe, $"-cefdebug={Port}") { UseShellExecute = false });
 
-        for (int i = 0; i < 40; i++) // up to two minutes for the launcher to start and load its store page
+        for (int i = 0; i < 60; i++) // up to two minutes for the launcher to start and load its store page
         {
-            await Task.Delay(3000);
-            if (await IsReachableAsync())
+            await Task.Delay(2000);
+            if (await Cdp.FindPageAsync(Port, IsStorePage) is not null)
             {
-                startedByGameShelf = true;
+                MinimizeLauncher();
                 return true;
             }
         }
@@ -96,25 +138,36 @@ internal static class EpicBridge
     }
 
     /// <summary>
-    /// Closes the launcher (and with it the debug port) once it has nothing left to download, if GameShelf started it:
-    /// it only had to run for the installation, and it would otherwise stay in the notification area.
+    /// Closes the launcher (and with it the debug port) once its download queue has been empty on two looks in a row:
+    /// GameShelf only needed it for the download, and it would otherwise stay in the task bar. Runs without any game
+    /// page open, and one watcher at a time.
     /// </summary>
-    public static async Task CloseWhenIdleAsync()
+    static async Task CloseWhenIdleAsync()
     {
-        if (!startedByGameShelf) return;
-        await Task.Delay(TimeSpan.FromSeconds(10)); // the launcher is still finishing the install
-        if (await RunAsync("return JSON.stringify(await ue.productinfo.getqueuedapps());") is not { } json) return;
+        if (watchingQueue) return;
+        watchingQueue = true;
         try
         {
-            using var document = JsonDocument.Parse(json);
-            if (document.RootElement.TryGetProperty("products", out var products) && products.GetArrayLength() > 0) return; // still busy
+            int quietLooks = 0;
+            while (Process.GetProcessesByName("EpicGamesLauncher").Length > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15));
+                quietLooks = await IsBusyAsync() ? 0 : quietLooks + 1;
+                if (quietLooks == 2)
+                {
+                    StopLauncher();
+                    return;
+                }
+            }
         }
-        catch (JsonException)
+        finally
         {
-            return;
+            watchingQueue = false;
         }
+    }
 
-        startedByGameShelf = false;
+    static void StopLauncher()
+    {
         foreach (var process in Process.GetProcessesByName("EpicGamesLauncher").Concat(Process.GetProcessesByName("EpicWebHelper")))
         {
             try
@@ -128,6 +181,32 @@ internal static class EpicBridge
         }
     }
 
+    /// <summary>
+    /// Uninstalls the game without the launcher: its confirmation box cannot be answered from outside, so the files and
+    /// the manifest are removed here, and the launcher is closed so it forgets the game (unless it is downloading
+    /// something else; it then shows the game until its next start). False if the files could not be removed.
+    /// </summary>
+    public static async Task<bool> UninstallAsync(EpicIdentity game)
+    {
+        if (!EpicLibrary.RemoveInstall(game.AppName)) return false;
+        if (await Cdp.FindPageAsync(Port, IsStorePage) is not null && !await IsBusyAsync()) StopLauncher();
+        return true;
+    }
+
+    static async Task<bool> IsBusyAsync()
+    {
+        if (await RunAsync("return JSON.stringify(await ue.productinfo.getqueuedapps());") is not { } json) return true; // cannot ask: do not end a download
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.TryGetProperty("products", out var products) && products.GetArrayLength() > 0;
+        }
+        catch (JsonException)
+        {
+            return true; // unreadable answer: do not end a download
+        }
+    }
+
     /// <summary>The game's state, or null when the launcher cannot be reached or does not know the game.</summary>
     public static async Task<EpicAppState?> GetStateAsync(EpicIdentity game) =>
         await CallAsync(game, "return JSON.stringify(await ue.productinfo.getapp(ns, id, app));") is { } json ? ParseState(json) : null;
@@ -137,23 +216,46 @@ internal static class EpicBridge
     /// Updates are left to the launcher's own setting.
     /// </summary>
     public static async Task<bool> InstallAsync(EpicIdentity game) =>
-        await CallAsync(game, "await ue.productinfo.installwithoptions(ns, id, app, false, false); return 'ok';") == "ok";
+        await StayMinimizedAsync(CallAsync(game, "await ue.productinfo.installwithoptions(ns, id, app, false, false); return 'ok';"));
 
     /// <summary>Starts the update the launcher has for the game.</summary>
     public static async Task<bool> UpdateAsync(EpicIdentity game) =>
-        await CallAsync(game, $"await ue.productinfo.update(ns, id, app, '{DownloadManager}'); return 'ok';") == "ok";
+        await StayMinimizedAsync(CallAsync(game, $"await ue.productinfo.update(ns, id, app, '{DownloadManager}'); return 'ok';"));
+
+    // Starting a download can bring the launcher's window up: it is put back in the task bar once the launcher has taken the order.
+    static async Task<bool> StayMinimizedAsync(Task<string?> call)
+    {
+        bool accepted = await call == "ok";
+        if (accepted)
+        {
+            await Task.Delay(1500);
+            MinimizeLauncher();
+            _ = CloseWhenIdleAsync();
+        }
+        return accepted;
+    }
 
     public static async Task<bool> PauseAsync(EpicIdentity game) =>
         await CallAsync(game, $"await ue.productinfo.pauseinstallation(ns, id, app, '{DownloadManager}'); return 'ok';") == "ok";
 
     public static async Task<bool> ResumeAsync(EpicIdentity game) =>
-        await CallAsync(game, $"await ue.productinfo.resumeinstallation(ns, id, app, '{DownloadManager}'); return 'ok';") == "ok";
+        await StayMinimizedAsync(CallAsync(game, $"await ue.productinfo.resumeinstallation(ns, id, app, '{DownloadManager}'); return 'ok';"));
 
-    public static async Task<bool> CancelAsync(EpicIdentity game) =>
-        await CallAsync(game, $"await ue.productinfo.cancelinstallation(ns, id, app, '{DownloadManager}'); return 'ok';") == "ok";
-
-    public static async Task<bool> UninstallAsync(EpicIdentity game) =>
-        await CallAsync(game, $"await ue.productinfo.uninstall(ns, id, app, '{DownloadManager}'); return 'ok';") == "ok";
+    /// <summary>
+    /// Cancels the download and removes what was downloaded. The launcher only pauses it (its cancel asks a box that
+    /// cannot be answered from outside), so the download is paused, the launcher is ended so nothing holds the files,
+    /// and the game's folder and manifest are deleted. The launcher starts again, in debug mode, on the next order.
+    /// False if the launcher did not take the pause.
+    /// </summary>
+    public static async Task<bool> CancelAsync(EpicIdentity game)
+    {
+        if (!await PauseAsync(game)) return false;
+        await Task.Delay(1500);
+        StopLauncher();
+        await Task.Delay(1500);
+        EpicLibrary.RemoveInstall(game.AppName);
+        return true;
+    }
 
     /// <summary>The folder the launcher installs the game in, or null if it cannot be asked.</summary>
     public static async Task<string?> GetInstallLocationAsync(EpicIdentity game) =>
@@ -167,7 +269,7 @@ internal static class EpicBridge
     /// <summary>Runs <paramref name="body"/> in the launcher's store page. Null if the launcher cannot be reached or the script failed.</summary>
     static async Task<string?> RunAsync(string body)
     {
-        if (await Cdp.FindPageAsync(Port, IsStorePage) is not { } socketUrl) return null;
+        if (await FindStorePageAsync() is not { } socketUrl) return null;
         var script = $"(async()=>{{ try {{ {body} }} catch (e) {{ return 'ERR:' + (e && e.message); }} }})()";
         var answer = await Cdp.RunAsync(script, socketUrl, CallTimeout);
         return answer is null || answer.StartsWith("ERR:", StringComparison.Ordinal) ? null : answer;
@@ -232,6 +334,21 @@ internal static class EpicBridge
     static bool IsStorePage(JsonElement page) =>
         page.TryGetProperty("type", out var type) && type.GetString() == "page"
         && page.TryGetProperty("url", out var url) && url.GetString()?.StartsWith("https://launcher.store.epicgames.com", StringComparison.Ordinal) == true;
+
+    /// <summary>
+    /// The launcher's program when it is not running: the one Windows starts for com.epicgames.launcher:// links (the
+    /// launcher can be installed on any drive), else the default install folder.
+    /// </summary>
+    static string? InstalledLauncherExe()
+    {
+        // The command reads: "C:\...\EpicGamesLauncher.exe" %1
+        if (Registry.ClassesRoot.OpenSubKey(@"com.epicgames.launcher\shell\open\command")?.GetValue(null) is string command)
+        {
+            var path = command.StartsWith('"') ? command.Split('"')[1] : command.Split(' ')[0];
+            if (File.Exists(path)) return path;
+        }
+        return File.Exists(DefaultLauncherExe) ? DefaultLauncherExe : null;
+    }
 
     static string? ExePathOf(Process process)
     {

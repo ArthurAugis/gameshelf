@@ -1,4 +1,6 @@
 {
+  "Could not uninstall the game": "Das Spiel konnte nicht deinstalliert werden",
+  "Some files could not be deleted. Close the game and try again.": "Einige Dateien konnten nicht gelöscht werden. Schließe das Spiel und versuche es erneut.",
   "Updates": "Updates",
   "Updates ({0})": "Updates ({0})",
   "Update all": "Alle aktualisieren",

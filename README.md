@@ -5,7 +5,7 @@
 <h1 align="center">GameShelf</h1>
 
 <p align="center">
-  A virtual bookshelf for your Steam library. Your games stand on a shelf like boxed games,<br>
+  A virtual bookshelf for your Steam and Epic Games library. Your games stand on a shelf like boxed games,<br>
   click one to inspect its 3D box, then play, install or uninstall it.
 </p>
 
@@ -158,8 +158,11 @@ not open GameShelf for a few weeks, Epic expires the token and you sign in again
 
 This relies on Epic's launcher endpoints, which are not a public API, so Epic can change them.
 
-Epic games start through the launcher. *Install*, *Pause*, *Cancel* and *Uninstall* on a game's page drive the Epic Games
-Launcher from GameShelf, without opening its window, like for Steam: GameShelf restarts the launcher once with a local
+Epic games start through the launcher. *Install*, *Pause* and *Cancel* on a game's page drive the Epic Games
+Launcher from GameShelf, without opening its window (it is kept minimized in the task bar, and brought back there if it
+was closed to the notification area), like for Steam. *Uninstall* does not use the launcher, whose confirmation box
+cannot be answered from outside: GameShelf deletes the game's folder (only if it holds the launcher's `.egstore` data) and
+its manifest, then closes the launcher so it forgets the game. GameShelf restarts the launcher once with a local
 debug port (`-cefdebug=<random port>`, asked first), and calls the same functions the launcher's own store page calls
 (`ue.productinfo`). The launcher does the downloading, so it installs into its default folder (change it in the
 launcher's settings), and updates and cloud saves keep working. The same security note as for Steam applies: while the
