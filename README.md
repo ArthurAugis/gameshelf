@@ -50,8 +50,9 @@
   (see [How the library is read](#how-the-library-is-read)).
 - **Hide games** you do not want on the shelf.
 - **Updates.** An **Updates** button lists the games that have an update waiting and starts them one by one or all
-  at once. Steam's come from the app manifests on your PC (instant, no Steam client needed); Epic's are read from the
-  launcher while GameShelf controls it.
+  at once. Steam's come from the app manifests on your PC (instant, no Steam client needed); GOG's from Galaxy's library file,
+  by comparing the installed build with the newest one Galaxy knows (as fresh as Galaxy's last check, and its Update
+  button opens the game's page in Galaxy); Epic's are read from the launcher while GameShelf controls it.
 - **Platform logos.** Each spine, and the front of the 3D box, shows the logo of the launcher the game comes from.
   A game you own on several launchers (same title) is one spine with every logo; its page has a chip per launcher to
   switch between the versions (install, play and uninstall are per launcher). Your status, rating, note and

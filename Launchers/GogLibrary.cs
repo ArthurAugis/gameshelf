@@ -59,7 +59,34 @@ internal static class GogLibrary
     public static List<Game> Scan()
     {
         Entries.Clear();
-        if (!IsGalaxyInstalled) return new List<Game>();
+        return WithDatabase(new List<Game>(), Read);
+    }
+
+    /// <summary>
+    /// The product ids of the installed games that have a newer build than the installed one. Galaxy fetches the
+    /// builds when it runs, so this is as fresh as the last time Galaxy checked. Empty when it cannot be read.
+    /// </summary>
+    public static HashSet<string> PendingUpdateProductIds() => WithDatabase(new HashSet<string>(), ReadPendingUpdates);
+
+    /// <summary>Opens the game's page in Galaxy, where its Update button is. False when Galaxy cannot be started.</summary>
+    public static bool OpenPage(Game game)
+    {
+        if (game.InstallUri is not { } uri) return false;
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
+            return true;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false; // nothing handles goggalaxy:// links: Galaxy is not installed
+        }
+    }
+
+    /// <summary>Runs <paramref name="read"/> on a copy of Galaxy's database, or returns <paramref name="empty"/> if there is none or it cannot be read.</summary>
+    static T WithDatabase<T>(T empty, Func<SqliteConnection, T> read)
+    {
+        if (!IsGalaxyInstalled) return empty;
 
         var work = Path.Combine(Path.GetTempPath(), "GameShelfGog-" + Guid.NewGuid().ToString("N"));
         try
@@ -72,11 +99,11 @@ internal static class GogLibrary
 
             using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = copy, Pooling = false }.ToString());
             connection.Open();
-            return Read(connection);
+            return read(connection);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or SqliteException)
         {
-            return new List<Game>(); // Galaxy is writing the file right now, or it is an unknown version
+            return empty; // Galaxy is writing the file right now, or it is an unknown version
         }
         finally
         {
@@ -152,6 +179,53 @@ internal static class GogLibrary
             games.Add(game);
         }
         return games.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
+    static HashSet<string> ReadPendingUpdates(SqliteConnection db)
+    {
+        var pending = new HashSet<string>();
+        var rows = Rows(db,
+            "SELECT i.productId, i.buildId, i.branch, b.manifest, s.selectedBuildId FROM InstalledBaseProducts i " +
+            "JOIN Builds b ON b.productId = i.productId LEFT JOIN ProductSettings s ON s.gameReleaseKey = 'gog_' || i.productId",
+            row => (Id: row.GetValue(0).ToString() ?? "", Build: row.IsDBNull(1) ? null : row.GetValue(1).ToString(),
+                Branch: row.IsDBNull(2) ? null : row.GetString(2), Manifest: row.IsDBNull(3) ? null : row.GetString(3),
+                Pinned: !row.IsDBNull(4) && row.GetValue(4).ToString() is { Length: > 0 }));
+        foreach (var row in rows)
+            if (!row.Pinned && row.Build is not null && row.Manifest is not null && IsUpdatePending(row.Build, row.Branch, row.Manifest))
+                pending.Add(row.Id);
+        return pending;
+    }
+
+    /// <summary>
+    /// True when Galaxy knows a newer public Windows build, on the branch the game is installed from, than the
+    /// installed one. Galaxy's manifest is GOG's list of builds. A build that is not in the list (a private one) never counts.
+    /// </summary>
+    internal static bool IsUpdatePending(string installedBuildId, string? branch, string manifestJson)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(manifestJson);
+            if (!document.RootElement.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) return false;
+
+            DateTimeOffset? installedDate = null, newestDate = null;
+            foreach (var item in items.EnumerateArray())
+            {
+                if (item.TryGetProperty("os", out var os) && os.GetString() != "windows") continue;
+                bool sameBranch = !item.TryGetProperty("branch", out var itemBranch) || itemBranch.ValueKind == JsonValueKind.Null
+                    ? string.IsNullOrEmpty(branch) : itemBranch.GetString() == branch;
+                if (!sameBranch || !item.TryGetProperty("date_published", out var published)
+                    || !DateTimeOffset.TryParse(published.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) continue;
+
+                if (item.TryGetProperty("build_id", out var id) && id.GetString() == installedBuildId) installedDate = date;
+                if (item.TryGetProperty("public", out var isPublic) && isPublic.ValueKind == JsonValueKind.False) continue;
+                if (newestDate is null || date > newestDate) newestDate = date;
+            }
+            return installedDate is { } installed && newestDate is { } newest && newest > installed;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     /// <summary>Starts the game through Galaxy, which runs it with its overlay and tracks the play time.</summary>

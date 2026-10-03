@@ -20,6 +20,16 @@ internal static class PendingUpdates
             .Select(game => new PendingUpdate(game, pending[game.AppId])).ToList();
     }
 
+    /// <summary>GOG games with a newer build, from Galaxy's own library file (as fresh as Galaxy's last check).</summary>
+    public static List<PendingUpdate> Gog(IEnumerable<Game> games)
+    {
+        var pending = GogLibrary.PendingUpdateProductIds().Select(GogLibrary.IdOf).ToHashSet();
+        return games.Where(game => game.Launcher == Launcher.Gog && pending.Contains(game.AppId)).Select(game => new PendingUpdate(game, 0)).ToList();
+    }
+
+    /// <summary>The updates that are known from files on this PC, with no launcher to ask: Steam's and GOG's.</summary>
+    public static List<PendingUpdate> OnDisk(IReadOnlyCollection<Game> games) => Steam(games).Concat(Gog(games)).ToList();
+
     /// <summary>
     /// Epic games with an update. Epic keeps that in the launcher, so this asks it: only call it while the launcher
     /// runs in the debug mode GameShelf uses to control it (<see cref="EpicBridge.IsReachableAsync"/>).
@@ -39,6 +49,7 @@ internal static class PendingUpdates
     public static async Task<bool> StartAsync(Game game) => game.Launcher switch
     {
         Launcher.Steam => await SteamInstaller.UpdateAsync(game.AppId),
+        Launcher.Gog => GogLibrary.OpenPage(game), // Galaxy cannot be driven from outside: its page has the Update button
         _ => EpicLibrary.IdentityOf(game.AppId) is { } identity && await EpicBridge.UpdateAsync(identity),
     };
 }

@@ -187,7 +187,7 @@ internal sealed partial class MainWindow : Window
     /// <summary>The "Updates" button shows how many Steam games have an update waiting (known from files on this PC).</summary>
     void RefreshGameUpdatesButton()
     {
-        int count = PendingUpdates.Steam(spines.Select(s => s.Game).Where(g => g.Installed)).Count;
+        int count = PendingUpdates.OnDisk(spines.Select(s => s.Game).Where(g => g.Installed).ToList()).Count;
         GameUpdatesButton.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
         GameUpdatesButton.Content = Loc.T("Updates ({0})", count);
     }
@@ -199,7 +199,7 @@ internal sealed partial class MainWindow : Window
     async void OnGameUpdatesClick(object sender, RoutedEventArgs e)
     {
         var installed = spines.Select(s => s.Game).Where(g => g.Installed).ToList();
-        var updates = PendingUpdates.Steam(installed);
+        var updates = PendingUpdates.OnDisk(installed);
         string? note = null;
         if (installed.Any(g => g.Launcher == Launcher.Epic))
         {

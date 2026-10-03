@@ -21,7 +21,9 @@ public sealed class GogLibraryTests : IDisposable
             CREATE TABLE LicensedReleases (libraryId INTEGER, isOwned INTEGER);
             CREATE TABLE GamePieceTypes (id INTEGER PRIMARY KEY, type TEXT);
             CREATE TABLE GamePieces (releaseKey TEXT, gamePieceTypeId INTEGER, userId INTEGER, value TEXT, languageId INTEGER);
-            CREATE TABLE InstalledBaseProducts (productId INTEGER, installationPath TEXT);
+            CREATE TABLE InstalledBaseProducts (productId INTEGER, installationPath TEXT, buildId TEXT, branch TEXT);
+            CREATE TABLE Builds (productId INTEGER, manifest TEXT, createdAt TEXT);
+            CREATE TABLE ProductSettings (gameReleaseKey TEXT, selectedBuildId TEXT);
             CREATE TABLE GameTimes (userId INTEGER, releaseKey TEXT, minutesInGame INTEGER);
             CREATE TABLE LastPlayedDates (userId INTEGER, gameReleaseKey TEXT, lastPlayedDate TEXT);
             CREATE TABLE DiskSizes (gameReleaseKey TEXT, diskSize INTEGER, diskDrive TEXT);
@@ -51,7 +53,7 @@ public sealed class GogLibraryTests : IDisposable
         Piece("gog_300", 1, """{"title":"Not Mine"}""");
         Piece("steam_5", 1, """{"title":"Steam Copy"}""");
         Execute("""
-            INSERT INTO InstalledBaseProducts VALUES (100, 'C:\Games\Tiny Quest');
+            INSERT INTO InstalledBaseProducts (productId, installationPath) VALUES (100, 'C:\Games\Tiny Quest');
             INSERT INTO GameTimes VALUES (1, 'gog_100', 90);
             INSERT INTO LastPlayedDates VALUES (1, 'gog_100', '2026-09-01T10:00:00Z');
             INSERT INTO DiskSizes VALUES ('gog_100', 123456, 'C');
@@ -88,6 +90,37 @@ public sealed class GogLibraryTests : IDisposable
         Assert.Empty(GogLibrary.Scan());
         File.Delete(GogLibrary.DatabasePath);
         Assert.Empty(GogLibrary.Scan());
+    }
+
+    const string Manifest = """
+        {"items":[
+          {"build_id":"3","os":"windows","branch":null,"public":true,"date_published":"2026-05-08T13:58:14+0000"},
+          {"build_id":"2","os":"windows","branch":null,"public":true,"date_published":"2026-04-29T12:36:24+0000"},
+          {"build_id":"9","os":"osx","branch":null,"public":true,"date_published":"2026-06-01T00:00:00+0000"},
+          {"build_id":"5","os":"windows","branch":"beta","public":true,"date_published":"2026-07-01T00:00:00+0000"},
+          {"build_id":"8","os":"windows","branch":null,"public":false,"date_published":"2026-08-01T00:00:00+0000"}]}
+        """;
+
+    [Fact]
+    public void IsUpdatePending_ComparesTheInstalledBuildWithTheNewestPublicOneOfItsBranch()
+    {
+        Assert.True(GogLibrary.IsUpdatePending("2", null, Manifest));   // build 3 is newer
+        Assert.False(GogLibrary.IsUpdatePending("3", null, Manifest));  // the newest already (the Mac, beta and private builds do not count)
+        Assert.False(GogLibrary.IsUpdatePending("77", null, Manifest)); // a build GOG does not list: never guess
+        Assert.False(GogLibrary.IsUpdatePending("5", "beta", Manifest));
+        Assert.False(GogLibrary.IsUpdatePending("2", null, "not json"));
+    }
+
+    [Fact]
+    public void PendingUpdateProductIds_ListsInstalledGamesBehindTheirNewestBuild_UnlessPinned()
+    {
+        Execute($$"""
+            INSERT INTO InstalledBaseProducts (productId, installationPath, buildId, branch) VALUES (100, 'C:\a', '2', NULL), (200, 'C:\b', '3', NULL), (300, 'C:\c', '2', NULL);
+            INSERT INTO Builds VALUES (100, '{{Manifest}}', ''), (200, '{{Manifest}}', ''), (300, '{{Manifest}}', '');
+            INSERT INTO ProductSettings VALUES ('gog_300', '2');
+            """);
+
+        Assert.Equal(new[] { "100" }, GogLibrary.PendingUpdateProductIds()); // 200 is up to date, 300 is pinned to its build
     }
 
     [Fact]
