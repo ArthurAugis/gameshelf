@@ -4,9 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using GameShelf.Controls;
-using GameShelf.Launchers;
-using GameShelf.Models;
 using GameShelf.Services;
 using GameShelf.Theming;
 
