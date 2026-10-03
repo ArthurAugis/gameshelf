@@ -85,6 +85,7 @@ public sealed class PlatformsTests
             try
             {
                 Assert.NotNull(PlatformLogos.Create(Launcher.Steam, 12));
+                Assert.NotNull(PlatformLogos.Create(Launcher.Gog, 12));
                 Assert.Equal(2, PlatformLogos.Row(new[] { Launcher.Steam, Launcher.Epic }, 12, 3).Children.Count);
             }
             catch (Exception e)

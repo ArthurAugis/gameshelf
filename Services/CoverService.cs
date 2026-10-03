@@ -28,13 +28,16 @@ internal static class CoverService
     public static Task<string?> EnsureCoverAsync(Game game) =>
         game.Cover is not null ? Task.FromResult<string?>(game.Cover)
         : game.Launcher == Launcher.Epic ? EnsureEpicAsync(game, EpicLibrary.BoxArt, $"epic_{game.AppId}.jpg")
+        : game.Launcher == Launcher.Gog ? EnsureGogAsync(game, GogLibrary.CoverArt, $"gog_{game.AppId}.jpg")
         : EnsureAsync(game.AppId, SteamLibrary.CoverFile, $"{game.AppId}.jpg");
 
     /// <summary>Path of the transparent logo, or null if the game has none (the spine then shows the title).</summary>
     public static Task<string?> EnsureLogoAsync(Game game) =>
         game.Launcher == Launcher.Epic
             ? EnsureEpicAsync(game, EpicLibrary.LogoArt, $"epic_{game.AppId}_logo.png")
-            : EnsureAsync(game.AppId, SteamLibrary.LogoFile, $"{game.AppId}_logo.png");
+            : game.Launcher == Launcher.Gog
+                ? Task.FromResult<string?>(null) // Galaxy has no transparent title logo: the spine shows the title
+                : EnsureAsync(game.AppId, SteamLibrary.LogoFile, $"{game.AppId}_logo.png");
 
     // One download per game, shared by whoever asks (a hover prefetch, then the details window).
     static readonly ConcurrentDictionary<uint, Task<string?>> HeroRequests = new();
@@ -43,9 +46,12 @@ internal static class CoverService
     public static Task<string?> EnsureHeroAsync(Game game)
     {
         var request = HeroRequests.GetOrAdd(game.AppId,
-            id => game.Launcher == Launcher.Epic
-                ? EnsureEpicAsync(game, EpicLibrary.WideArt, $"epic_{id}_hero.jpg")
-                : EnsureAsync(id, SteamLibrary.HeroFile, $"{id}_hero.jpg"));
+            id => game.Launcher switch
+            {
+                Launcher.Epic => EnsureEpicAsync(game, EpicLibrary.WideArt, $"epic_{id}_hero.jpg"),
+                Launcher.Gog => EnsureGogAsync(game, GogLibrary.WideArt, $"gog_{id}_hero.jpg"),
+                _ => EnsureAsync(id, SteamLibrary.HeroFile, $"{id}_hero.jpg"),
+            });
         // A missing hero is not remembered, so the next ask tries again.
         _ = request.ContinueWith(task =>
         {
@@ -74,6 +80,17 @@ internal static class CoverService
         var cached = Path.Combine(CacheDir, cacheName);
         if (File.Exists(cached)) return cached;
         if (EpicLibrary.ArtUrl(game.AppId, imageType) is not { } url) return null;
+
+        Directory.CreateDirectory(CacheDir);
+        return await TryDownloadAsync(url, cached) ? cached : null;
+    }
+
+    /// <summary>An image of a GOG game, from the address in Galaxy's library, kept in the cover folder.</summary>
+    static async Task<string?> EnsureGogAsync(Game game, string imageKey, string cacheName)
+    {
+        var cached = Path.Combine(CacheDir, cacheName);
+        if (File.Exists(cached)) return cached;
+        if (GogLibrary.ArtUrl(game.AppId, imageKey) is not { } url) return null;
 
         Directory.CreateDirectory(CacheDir);
         return await TryDownloadAsync(url, cached) ? cached : null;

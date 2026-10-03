@@ -5,7 +5,7 @@
 <h1 align="center">GameShelf</h1>
 
 <p align="center">
-  A virtual bookshelf for your Steam and Epic Games library. Your games stand on a shelf like boxed games,<br>
+  A virtual bookshelf for your Steam, Epic Games and GOG library. Your games stand on a shelf like boxed games,<br>
   click one to inspect its 3D box, then play, install or uninstall it.
 </p>
 
@@ -56,8 +56,8 @@
   A game you own on several launchers (same title) is one spine with every logo; its page has a chip per launcher to
   switch between the versions (install, play and uninstall are per launcher). Your status, rating, note and
   collections are shared by all of them.
-- **More than Steam.** The games installed through the **Epic Games Launcher** are on the shelf too, with their
-  box art from Epic's catalog, and start through the launcher. See [Other launchers](#other-launchers).
+- **More than Steam.** The games of the **Epic Games Launcher** and of **GOG Galaxy** are on the shelf too, with
+  their box art, and start through their launcher. See [Other launchers](#other-launchers).
 
 <p align="center">
   <img src="docs/game-page.png" alt="The page of a game, with its 3D box" width="640">
@@ -139,6 +139,7 @@ them; GameShelf then falls back to the last known library, the local scan, and S
 | --- | --- | --- |
 | Steam | Your whole library, installed or not | See above |
 | Epic Games Launcher | Every game you own, installed or not (after **Epic library**), else only the installed ones | Epic's servers for the owned list, and the launcher's manifests and catalog cache (`C:\ProgramData\Epic\EpicGamesLauncher\Data`) for what is installed |
+| GOG Galaxy | Every game your GOG account owns, installed or not, with play time | Galaxy's own library file (`C:\ProgramData\GOG.com\Galaxy\storage\galaxy-2.0.db`), read from a temporary copy: no sign-in and no request to GOG in GameShelf, Galaxy keeps the file up to date |
 
 Epic keeps the list of the games you own on its servers, not on your PC, and has no public API for it. GameShelf
 does what [Legendary](https://github.com/derrod/legendary) and Heroic do. The **Epic library** button shows Epic's own
@@ -171,6 +172,12 @@ off. It also relies on the launcher's internals, so an update of the launcher ca
 falls back to opening the launcher's own install window. The launcher reports no download speed, only a percentage.
 Play time is only known for Steam games, so the played / never played filters are about Steam.
 
+**GOG Galaxy.** Sign in to Galaxy once and its library appears on the shelf by itself (games of other platforms
+linked in Galaxy are left out: Steam and Epic are read directly). *Play* starts the game through Galaxy
+(`GalaxyClient.exe /command=runGame`), *Install* opens the game's page in Galaxy, and *Uninstall* runs the game's own
+uninstaller. Galaxy has no way to be driven from outside, so GameShelf shows no download progress for GOG games. The
+cover comes from GOG's image server.
+
 To add another launcher, write a reader that returns `Game` objects (see [Launchers/EpicLibrary.cs](Launchers/EpicLibrary.cs)),
 give them an id made up from a stable name, and add the launcher to the `Launcher` enum.
 
@@ -199,7 +206,7 @@ GameShelf only reads Steam's files. It writes here, in `%LOCALAPPDATA%\GameShelf
 
 The network access is public, without any API key: Steam's servers for missing covers, logos and backdrops, and for
 the description, genres, developer, and release date of a game (the public store API), Epic's servers for
-the box art of Epic games, and GitHub's public API to look for a new release of GameShelf. The only sign-in is the
+the box art of Epic games, GOG's image server for the covers of GOG games, and GitHub's public API to look for a new release of GameShelf. The only sign-in is the
 Epic one (see above), and you can sign out of it at any time.
 
 ### Shelf textures
@@ -213,7 +220,7 @@ imported to delete it.
 
 ```
 Assets/        App icon and logo (logo-source.png is the original artwork)
-Launchers/     Readers for the launchers other than Steam (Epic Games Launcher)
+Launchers/     Readers for the launchers other than Steam (Epic Games Launcher, GOG Galaxy)
 Controls/      SpineView (a game on the shelf), GameBoxView and BoxTextures (the 3D box), SearchBox,
                FilterPanel, SpeedGraph (download speed chart)
 Localization/  One JSON file per language: English text to translated text
@@ -259,7 +266,7 @@ installer (`GameShelf-1.2.3-win-x64.msi`) and a portable zip. The tag becomes th
 
 ## Status
 
-Version 0.1.0. Developed and tested on Windows 11 with the Steam client in French and English.
+Version 0.1.2. Developed and tested on Windows 11 with the Steam client in French and English.
 Pausing and cancelling a download was tested on one small Steam game. The controller code is
 written for Xbox-style (XInput) controllers.
 

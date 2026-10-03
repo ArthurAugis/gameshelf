@@ -23,7 +23,8 @@ internal static class GameDetailsService
     /// <summary>The game's details, or null when offline or when the store has no page for it.</summary>
     public static Task<GameDetails?> GetAsync(uint appId)
     {
-        // Not a Steam id: what the Epic catalog says about the game is all there is.
+        // Not a Steam id: what the launcher says about the game is all there is.
+        if (GogLibrary.IsGogId(appId)) return Task.FromResult(GogLibrary.DetailsOf(appId));
         if (EpicLibrary.IsEpicId(appId)) return Task.FromResult(EpicLibrary.DetailsOf(appId));
 
         var request = Requests.GetOrAdd(appId, FetchAsync);

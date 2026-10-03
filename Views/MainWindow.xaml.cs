@@ -125,6 +125,7 @@ internal sealed partial class MainWindow : Window
                 var list = SteamLibrary.Scan(library);
                 SteamMetadata.Fill(list); // genres, features, play time... for the search and filters (Steam only)
                 list.AddRange(EpicLibrary.Scan(epic));
+                list.AddRange(GogLibrary.Scan());
                 return list;
             });
             Platforms.Match(games); // the same title on several launchers: every logo on each cover

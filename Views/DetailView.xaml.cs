@@ -125,10 +125,15 @@ internal sealed partial class DetailView : UserControl
         }
         DescriptionText.Text = Loc.T("Loading details...");
 
-        // Only Steam records play time; for another launcher it is unknown.
-        var stats = game.Launcher == Launcher.Steam ? SteamLibrary.ReadPlayStats(game.AppId) : null;
+        // Steam and GOG Galaxy record play time; Epic's launcher keeps it out of reach, so it is unknown there.
+        var stats = game.Launcher switch
+        {
+            Launcher.Steam => SteamLibrary.ReadPlayStats(game.AppId),
+            Launcher.Gog => new PlayStats(game.PlayTime, game.LastPlayed),
+            _ => null,
+        };
         PlayTimeValue.Text = stats is { PlayTime.TotalMinutes: > 0 } ? DisplayFormat.PlayTime(stats.PlayTime)
-            : game.Launcher == Launcher.Steam ? Loc.T("Never played") : "-";
+            : game.Launcher is Launcher.Steam or Launcher.Gog ? Loc.T("Never played") : "-";
         LastPlayedValue.Text = stats?.LastPlayed is { } date ? date.ToString("d MMM yyyy", CultureInfo.CurrentCulture) : "-";
         foreach (var launcher in game.OwnedOn) GenreChips.Children.Add(CreatePlatformChip(launcher));
         HideButton.Content = HiddenGames.Contains(game.KeyId)
@@ -443,6 +448,7 @@ internal sealed partial class DetailView : UserControl
     void OnPlayClick(object sender, RoutedEventArgs e)
     {
         if (game.Launcher == Launcher.Steam) SteamControl.Play(game.AppId);
+        else if (game.Launcher == Launcher.Gog) GogLibrary.Play(game);
         else if (game.LaunchUri is { } uri) OpenUri(uri);
     }
 
@@ -503,6 +509,12 @@ internal sealed partial class DetailView : UserControl
         if (game.Launcher == Launcher.Epic)
         {
             await UninstallEpicAsync();
+            return;
+        }
+        if (game.Launcher == Launcher.Gog)
+        {
+            // The game's own uninstaller asks for confirmation; without one, Galaxy's page of the game is the way left.
+            if (!GogLibrary.Uninstall(game) && game.InstallUri is { } galaxyPage) OpenUri(galaxyPage);
             return;
         }
         if (!MessageDialog.Confirm(Host, Loc.T("Uninstall {0}?", game.Name),

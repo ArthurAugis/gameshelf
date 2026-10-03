@@ -1,7 +1,7 @@
 namespace GameShelf.Models;
 
 /// <summary>Where a game comes from.</summary>
-internal enum Launcher { Steam, Epic }
+internal enum Launcher { Steam, Epic, Gog }
 
 internal static class LauncherExtensions
 {
@@ -9,6 +9,7 @@ internal static class LauncherExtensions
     public static string DisplayName(this Launcher launcher) => launcher switch
     {
         Launcher.Epic => "Epic Games",
+        Launcher.Gog => "GOG Galaxy",
         _ => "Steam",
     };
 }
