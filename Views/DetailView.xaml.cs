@@ -218,12 +218,37 @@ internal sealed partial class DetailView : UserControl
         }
     }
 
-    /// <summary>Five stars; clicking the last lit one clears the rating.</summary>
+    /// <summary>
+    /// Five stars. The rating can be cleared three ways: the cross beside the stars (shown once there is a rating),
+    /// a right click on a star, or a click on the last lit star.
+    /// </summary>
     void BuildStars()
     {
         Stars.Children.Clear();
         var gold = new SolidColorBrush(Color.FromRgb(0xd9, 0xb7, 0x7a));
         var grey = new SolidColorBrush(Color.FromArgb(0x70, 255, 255, 255));
+        void Clear()
+        {
+            rating = 0;
+            SaveNote();
+            BuildStars();
+        }
+
+        if (rating > 0)
+        {
+            var clear = new Button
+            {
+                Content = Loc.T("Clear"),
+                FontSize = 12,
+                Foreground = grey,
+                Style = (Style)FindResource("LinkButton"),
+                Padding = new Thickness(4, 2, 8, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = Loc.T("Clear the rating"),
+            };
+            clear.Click += (_, _) => Clear();
+            Stars.Children.Add(clear);
+        }
         for (int star = 1; star <= GameNotes.MaxRating; star++)
         {
             int value = star;
@@ -243,6 +268,7 @@ internal sealed partial class DetailView : UserControl
                 SaveNote();
                 BuildStars();
             };
+            button.MouseRightButtonUp += (_, _) => Clear();
             Stars.Children.Add(button);
         }
     }

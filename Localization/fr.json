@@ -1,4 +1,6 @@
 {
+  "Clear": "Effacer",
+  "Clear the rating": "Effacer la note",
   "Game file (ISO, ROM...)": "Fichier du jeu (ISO, ROM...)",
   "{0} detected: pick the game file and GameShelf writes the arguments.": "{0} détecté : choisissez le fichier du jeu et GameShelf écrit les arguments.",
   "Games": "Jeux",
