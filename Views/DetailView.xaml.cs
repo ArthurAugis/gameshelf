@@ -28,8 +28,9 @@ internal sealed partial class DetailView : UserControl
     static readonly TimeSpan SyncInterval = TimeSpan.FromMilliseconds(1500);
     static readonly TimeSpan StartGracePeriod = TimeSpan.FromSeconds(20);
 
-    readonly Game game;
-    readonly GameBoxView box;
+    Game game;
+    GameBoxView box;
+    readonly double titleFontSize;
     readonly DispatcherTimer syncTimer = new() { Interval = SyncInterval };
 
     PlayStatus status;           // the user's own status and rating for this game
@@ -52,6 +53,7 @@ internal sealed partial class DetailView : UserControl
         InitializeComponent();
         Loc.Apply(this);
         this.game = game;
+        titleFontSize = TitleText.FontSize;
 
         Glow.Fill = new RadialGradientBrush(ColorUtil.Shade(color, 1.6), Colors.Transparent);
         box = new GameBoxView(game, color);
@@ -74,6 +76,28 @@ internal sealed partial class DetailView : UserControl
             // Ready before the user clicks Install, so the disk choice opens at once.
             if (!game.Installed && !installing && game.Launcher == Launcher.Steam) PreparePlan();
         };
+    }
+
+    /// <summary>The game this page shows.</summary>
+    public uint AppId => game.AppId;
+
+    /// <summary>
+    /// The game was edited: the page shows its new values (name, console, cover, box) without closing, so the user
+    /// stays where they were.
+    /// </summary>
+    public void Reload(Game updated, Color color)
+    {
+        game = updated;
+        Glow.Fill = new RadialGradientBrush(ColorUtil.Shade(color, 1.6), Colors.Transparent);
+        Stage.Children.Remove(box);
+        box = new GameBoxView(game, color);
+        Stage.Children.Add(box);
+
+        GenreChips.Children.Clear();
+        TitleText.FontSize = titleFontSize;
+        ShowIdentity();
+        ApplyInstallState();
+        _ = ShowOnlineInfoAsync();
     }
 
     /// <summary>The user chose another launcher of the same title: the shelf opens that game's page instead.</summary>
@@ -758,11 +782,8 @@ internal sealed partial class DetailView : UserControl
         }
     }
 
-    /// <summary>Edits a game added by hand; the shelf reads the list again and this page, which shows the old values, closes.</summary>
-    void OnEditClick(object sender, RoutedEventArgs e)
-    {
-        if (AddGameDialog.Show(Host, game)) Close();
-    }
+    /// <summary>Edits a game added by hand. The shelf reads the games again and calls <see cref="Reload"/>: this page stays open.</summary>
+    void OnEditClick(object sender, RoutedEventArgs e) => AddGameDialog.Show(Host, game);
 
     void OnHideClick(object sender, RoutedEventArgs e)
     {

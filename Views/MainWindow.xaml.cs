@@ -62,7 +62,7 @@ internal sealed partial class MainWindow : Window
     {
         InitializeComponent();
         WindowPlacement.Restore(this);
-        ManualGames.Changed += () => Dispatcher.InvokeAsync(() => LoadAsync(offerExactMode: false)); // a game was added or removed by hand
+        ManualGames.Changed += () => Dispatcher.InvokeAsync(RefreshManualGamesAsync); // a game was added, changed or removed by hand
         Closing += (_, _) => WindowPlacement.Save(this, fullscreen ? windowStateBeforeFullscreen == WindowState.Maximized : WindowState == WindowState.Maximized);
         DarkTitleBar.Apply(this);
         Loc.Apply(this);
@@ -338,15 +338,7 @@ internal sealed partial class MainWindow : Window
             await limiter.WaitAsync();
             try
             {
-                var coverPath = await CoverService.EnsureCoverAsync(spine.Game);
-                spine.Game.Cover = coverPath;
-                spine.Game.Logo = await CoverService.EnsureLogoAsync(spine.Game);
-                if (coverPath is not null) spine.SetPalette(await Task.Run(() => ColorUtil.Palette(coverPath)));
-                else spine.Refresh();
-            }
-            catch (Exception)
-            {
-                // One broken or unreadable image must not stop the others: that spine keeps its placeholder look.
+                await LoadArtworkOfAsync(spine);
             }
             finally
             {
@@ -355,6 +347,48 @@ internal sealed partial class MainWindow : Window
                 SetSplash(Loc.T("Loading covers... {0}/{1}", (int)SplashBar.Value, spines.Count));
             }
         }));
+    }
+
+    static async Task LoadArtworkOfAsync(SpineView spine)
+    {
+        try
+        {
+            var coverPath = await CoverService.EnsureCoverAsync(spine.Game);
+            spine.Game.Cover = coverPath;
+            spine.Game.Logo = await CoverService.EnsureLogoAsync(spine.Game);
+            if (coverPath is not null) spine.SetPalette(await Task.Run(() => ColorUtil.Palette(coverPath)));
+            else spine.Refresh();
+        }
+        catch (Exception)
+        {
+            // One broken or unreadable image must not stop the others: that spine keeps its placeholder look.
+        }
+    }
+
+    /// <summary>
+    /// A game was added, edited or removed by hand: only the games added by hand are read again and redrawn, with no
+    /// splash screen and nothing else reloaded. After an edit, the game's page stays open with the new values.
+    /// </summary>
+    async Task RefreshManualGamesAsync()
+    {
+        var edited = ManualGames.TakeEdited();
+        spines.RemoveAll(s => s.Game.Launcher == Launcher.Manual);
+        var added = new List<SpineView>();
+        foreach (var game in ManualGames.Scan())
+        {
+            var spine = new SpineView(game, ColorUtil.PlaceholderFor(game.AppId));
+            HookSpine(spine);
+            spines.Add(spine);
+            added.Add(spine);
+        }
+        BindFilterOptions();
+        RebuildShelf();
+
+        await Task.WhenAll(added.Select(LoadArtworkOfAsync));
+        RebuildShelf();
+        // The page of the edited game, if it is open (it normally is), shows the new values where it stands.
+        if (edited is { } id && detail?.AppId == id && added.FirstOrDefault(s => s.Game.AppId == id) is { } updated)
+            detail.Reload(updated.Game, updated.Color);
     }
 
     void SetSplash(string text) => SplashText.Text = text;

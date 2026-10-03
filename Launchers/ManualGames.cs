@@ -20,6 +20,7 @@ internal static class ManualGames
     const uint ManualIdFlag = 0x80000000;
 
     static readonly object Gate = new();
+    static uint? lastEdited;
     static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
     static readonly Dictionary<uint, string> EntryIds = new(); // game id -> entry id. Filled in by Scan.
 
@@ -100,9 +101,21 @@ internal static class ManualGames
         {
             if (!EntryIds.TryGetValue(game.AppId, out var id)) return;
             if (coverJpeg is not null) File.WriteAllBytes(CoverPath(id), coverJpeg);
+            lastEdited = game.AppId;
             Update(id, entry => entry with { Name = name, Exe = exe, Arguments = string.IsNullOrWhiteSpace(arguments) ? null : arguments.Trim(), Console = console });
         }
         Changed?.Invoke();
+    }
+
+    /// <summary>The game that was just edited (once), so the shelf can open its page again.</summary>
+    public static uint? TakeEdited()
+    {
+        lock (Gate)
+        {
+            var edited = lastEdited;
+            lastEdited = null;
+            return edited;
+        }
     }
 
     /// <summary>Takes the game off the shelf. The program and its files are not touched.</summary>

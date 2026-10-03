@@ -14,6 +14,7 @@ internal static class ImageLoader
         image.BeginInit();
         image.UriSource = new Uri(path);
         image.CacheOption = BitmapCacheOption.OnLoad;
+        image.CreateOptions = BitmapCreateOptions.IgnoreImageCache; // a cover that was replaced under the same name must show
         if (decodeWidth > 0) image.DecodePixelWidth = decodeWidth;
         image.EndInit();
         image.Freeze();
