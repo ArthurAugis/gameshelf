@@ -10,7 +10,7 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Product>GameShelf</Product>
     <Description>A virtual bookshelf for your Steam, Epic Games and GOG library.</Description>
-    <Version>0.1.2</Version>
+    <Version>0.2.0</Version>
     <RepositoryUrl>https://github.com/ArthurAugis/GameShelf</RepositoryUrl>
     <!-- Ship the .NET runtime texts only for the languages GameShelf is translated in (smaller installer) -->
     <SatelliteResourceLanguages>en;fr;es;de</SatelliteResourceLanguages>

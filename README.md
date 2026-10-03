@@ -276,7 +276,7 @@ installer (`GameShelf-1.2.3-win-x64.msi`) and a portable zip. The tag becomes th
 
 ## Status
 
-Version 0.1.2. Developed and tested on Windows 11 with the Steam client in French and English.
+Version 0.2.0. Developed and tested on Windows 11 with the Steam client in French and English.
 Pausing and cancelling a download was tested on one small Steam game. The controller code is
 written for Xbox-style (XInput) controllers.
 
