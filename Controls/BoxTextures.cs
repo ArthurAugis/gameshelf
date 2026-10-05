@@ -282,15 +282,21 @@ internal static class BoxTextures
                 MaxWidth = maxWidth,
                 MaxHeight = maxHeight,
             }
-            : new TextBlock
+            : new Viewbox // a long title wraps, then shrinks to fit the face instead of overflowing it
             {
-                Text = DisplayFormat.Shorten(game.Name, 40),
-                Foreground = Brushes.White,
-                FontSize = titleSize,
-                FontWeight = FontWeights.Bold,
-                TextWrapping = TextWrapping.Wrap,
-                TextAlignment = TextAlignment.Center,
+                StretchDirection = StretchDirection.DownOnly,
                 MaxWidth = maxWidth,
+                MaxHeight = maxHeight,
+                Child = new TextBlock
+                {
+                    Text = DisplayFormat.Shorten(game.Name, 40),
+                    Foreground = Brushes.White,
+                    FontSize = titleSize,
+                    FontWeight = FontWeights.Bold,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    MaxWidth = maxWidth,
+                },
             };
         RenderOptions.SetBitmapScalingMode(element, BitmapScalingMode.HighQuality);
         element.HorizontalAlignment = HorizontalAlignment.Center;
