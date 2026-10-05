@@ -92,9 +92,10 @@ Download the latest `.msi` from the [Releases](../../releases) page. It installs
 administrator rights) and includes everything it needs, there is nothing else to install. The installer is not
 code-signed, so Windows SmartScreen may ask you to confirm. A portable `.zip` is published too.
 
-GameShelf looks for a newer release when it starts and shows an **Update** button when there is one. Updating
-downloads that release's `.msi` from this repository and runs it. To turn the check off, create an empty file
-named `no-update-check.txt` in `%LOCALAPPDATA%\GameShelf`.
+GameShelf looks for a newer release when it starts. When there is one, it offers to update once the shelf is
+loaded, and an **Update** button stays in the header if you choose Later. Updating downloads that release's `.msi`
+from this repository, closes GameShelf, installs it and starts the new version. To turn the check off, create an
+empty file named `no-update-check.txt` in `%LOCALAPPDATA%\GameShelf`.
 
 ## Build and run
 

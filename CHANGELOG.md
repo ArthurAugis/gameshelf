@@ -10,6 +10,7 @@ Each release is listed here and in the app (click the version number in the head
 - The window, header, game page, filters and dialogs adapt to small windows
 - Long titles shrink to fit the top and back of the 3D box
 - The version number in the header opens this changelog
+- Automatic update: at launch GameShelf offers a new release, installs it and starts again
 
 ## 0.1.2 - 2026-10-03
 

@@ -50,4 +50,14 @@ public sealed class UpdateCheckerTests
     [InlineData("{ \"tag_name\": \"nightly\", \"assets\": [] }")]
     public void AnUnreadableAnswerIsIgnored(string json) =>
         Assert.Null(UpdateChecker.Parse(json, Repository, new Version(0, 1, 0)));
+
+    [Fact]
+    public void TheInstallCommandInstallsThenStartsTheAppAgain()
+    {
+        var command = UpdateChecker.InstallCommand("a.msi", "b.exe");
+
+        var install = command.IndexOf("msiexec /i \"a.msi\" /passive", StringComparison.Ordinal);
+        var start = command.IndexOf("start \"\" \"b.exe\"", StringComparison.Ordinal);
+        Assert.True(install >= 0 && start > install);
+    }
 }

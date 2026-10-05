@@ -80,8 +80,12 @@ internal static class UpdateChecker
             await using (var file = File.Create(path))
                 await download.CopyToAsync(file);
 
-            // /passive: a progress bar and no questions.
-            Process.Start(new ProcessStartInfo("msiexec.exe", $"/i \"{path}\" /passive") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("cmd.exe", InstallCommand(path, InstalledExe))
+            {
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                UseShellExecute = false,
+            });
             return true;
         }
         catch (Exception e) when (e is HttpRequestException or IOException or TaskCanceledException
@@ -90,6 +94,17 @@ internal static class UpdateChecker
             return false;
         }
     }
+
+    /// <summary>Where the installer puts GameShelf (per user, see installer/GameShelf.wxs).</summary>
+    static string InstalledExe { get; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "GameShelf", "GameShelf.exe");
+
+    /// <summary>
+    /// The command line that waits a moment for GameShelf to close, installs the .msi (/passive: a progress bar and
+    /// no questions), then starts the installed GameShelf again. Public to the tests.
+    /// </summary>
+    internal static string InstallCommand(string msiPath, string exePath) =>
+        $"/c ping -n 3 127.0.0.1 >nul & msiexec /i \"{msiPath}\" /passive /norestart & if exist \"{exePath}\" start \"\" \"{exePath}\"";
 
     static HttpClient CreateClient()
     {

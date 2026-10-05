@@ -790,21 +790,32 @@ internal sealed partial class MainWindow : Window
 
     // ---- Updates ----
 
-    /// <summary>Shows the "Update" button in the header when a newer release exists.</summary>
+    /// <summary>
+    /// Looks for a newer release at launch: the "Update" button shows in the header, and once the shelf is ready
+    /// (no loading screen, no dialog) GameShelf offers the update once.
+    /// </summary>
     async Task CheckForUpdateAsync()
     {
         availableUpdate = await UpdateChecker.CheckAsync();
-        if (availableUpdate is null) return;
-        UpdateButton.Content = Loc.T("Update to v{0}", availableUpdate.Version.ToString(3));
+        if (availableUpdate is not { } update) return;
+        UpdateButton.Content = Loc.T("Update to v{0}", update.Version.ToString(3));
         UpdateButton.Visibility = Visibility.Visible;
+
+        while (Splash.Visibility == Visibility.Visible || DialogHost.IsOpen) await Task.Delay(500);
+        await OfferUpdateAsync(update);
     }
 
     async void OnUpdateClick(object sender, RoutedEventArgs e)
     {
-        if (availableUpdate is not { } update) return;
+        if (availableUpdate is { } update) await OfferUpdateAsync(update);
+    }
+
+    /// <summary>Asks, then downloads and installs the update; GameShelf closes for it and starts again when it is done.</summary>
+    async Task OfferUpdateAsync(UpdateInfo update)
+    {
         var version = update.Version.ToString(3);
         if (!MessageDialog.Confirm(this, Loc.T("Update GameShelf to v{0}?", version),
-                Loc.T("GameShelf downloads the new version, closes, and installs it. Start it again when the installer is done."),
+                Loc.T("GameShelf downloads the new version, closes, installs it and starts again."),
                 Loc.T("Update"), Loc.T("Later")))
             return;
 

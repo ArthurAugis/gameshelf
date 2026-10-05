@@ -172,7 +172,7 @@
   "Later": "Später",
   "Update to v{0}": "Auf v{0} aktualisieren",
   "Update GameShelf to v{0}?": "GameShelf auf v{0} aktualisieren?",
-  "GameShelf downloads the new version, closes, and installs it. Start it again when the installer is done.": "GameShelf lädt die neue Version herunter, schließt sich und installiert sie. Starte es erneut, wenn das Installationsprogramm fertig ist.",
+  "GameShelf downloads the new version, closes, installs it and starts again.": "GameShelf lädt die neue Version herunter, schließt sich, installiert sie und startet neu.",
   "Update": "Aktualisieren",
   "Downloading the update...": "Update wird heruntergeladen...",
   "The update could not be downloaded": "Das Update konnte nicht heruntergeladen werden",
