@@ -36,6 +36,7 @@
   <ItemGroup>
     <Resource Include="Assets\logo.png" />
     <EmbeddedResource Include="Localization\*.json" />
+    <EmbeddedResource Include="CHANGELOG.md" LogicalName="CHANGELOG.md" />
     <InternalsVisibleTo Include="GameShelf.Tests" />
   </ItemGroup>
 

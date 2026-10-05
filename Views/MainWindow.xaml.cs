@@ -67,6 +67,7 @@ internal sealed partial class MainWindow : Window
         Closing += (_, _) => WindowPlacement.Save(this, fullscreen ? windowStateBeforeFullscreen == WindowState.Maximized : WindowState == WindowState.Maximized);
         DarkTitleBar.Apply(this);
         Loc.Apply(this);
+        VersionButton.Content = "v" + UpdateChecker.CurrentVersion.ToString(3);
         LanguageButton.Content = Flags.Create(Loc.Current.Code);
         BuildLanguageChips();
 
@@ -858,6 +859,8 @@ internal sealed partial class MainWindow : Window
         RebuildShelf(); // or hidden / restored
     }
 
+
+    void OnVersionClick(object sender, RoutedEventArgs e) => ChangelogPanel.Show(this);
 
     void OnShowHiddenClick(object sender, RoutedEventArgs e) => RebuildShelf();
 

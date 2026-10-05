@@ -1,4 +1,7 @@
 {
+  "Changelog": "Änderungsprotokoll",
+  "You are using version {0}.": "Du nutzt Version {0}.",
+  "Current": "Aktuell",
   "Clear": "Löschen",
   "Clear the rating": "Bewertung löschen",
   "Game file (ISO, ROM...)": "Spieldatei (ISO, ROM...)",

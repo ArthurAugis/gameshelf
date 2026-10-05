@@ -28,7 +28,9 @@
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                         <TextBlock x:Name="TitleLabel" Text="GameShelf" FontFamily="Georgia" FontSize="23" Foreground="#d9b77a"
                                    VerticalAlignment="Center" ToolTip="{Binding Text, ElementName=StatusText}"/>
-                        <TextBlock x:Name="StatusText" Foreground="#8a8378" FontSize="12.5" VerticalAlignment="Center" Margin="20,3,0,0"/>
+                        <Button x:Name="VersionButton" Style="{StaticResource LinkButton}" FontSize="11.5" Foreground="#8a8378"
+                                VerticalAlignment="Center" Margin="6,6,0,0" Padding="6,2" ToolTip="Changelog" Click="OnVersionClick"/>
+                        <TextBlock x:Name="StatusText" Foreground="#8a8378" FontSize="12.5" VerticalAlignment="Center" Margin="14,3,0,0"/>
                     </StackPanel>
 
                     <!-- Search and filters: the search takes what is left, up to 340 px -->
