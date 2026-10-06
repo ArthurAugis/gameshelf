@@ -2,6 +2,10 @@
 
 Each release is listed here and in the app (click the version number in the header).
 
+## 0.3.0 - 2026-10-06
+
+- Import a whole folder of ROMs or PC games at once: one entry per game, with the console guessed and the cover searched by name
+
 ## 0.2.1 - 2026-10-05
 
 - Automatic update: at launch GameShelf offers a new release, installs it and starts again

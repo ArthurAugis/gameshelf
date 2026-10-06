@@ -74,19 +74,34 @@ internal static class ManualGames
     }
 
     /// <summary>Adds a game with its cover (a JPEG), and tells the shelf.</summary>
-    public static void Add(string name, string exe, string? arguments, string console, byte[] coverJpeg)
+    public static void Add(string name, string exe, string? arguments, string console, byte[] coverJpeg) =>
+        AddMany(new[] { (name, exe, arguments, console, coverJpeg) });
+
+    /// <summary>Adds several games, each with its cover (a JPEG), in one go: the shelf is told once.</summary>
+    public static void AddMany(IEnumerable<(string Name, string Exe, string? Arguments, string Console, byte[] CoverJpeg)> games)
     {
-        var id = Guid.NewGuid().ToString("N")[..12];
         lock (Gate)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(CoverPath(id))!);
-            File.WriteAllBytes(CoverPath(id), coverJpeg);
             var entries = Load();
-            entries.Add(new ManualEntry(id, name, exe, string.IsNullOrWhiteSpace(arguments) ? null : arguments.Trim(), console, 0, null));
+            foreach (var (name, exe, arguments, console, coverJpeg) in games)
+            {
+                var id = Guid.NewGuid().ToString("N")[..12];
+                Directory.CreateDirectory(Path.GetDirectoryName(CoverPath(id))!);
+                File.WriteAllBytes(CoverPath(id), coverJpeg);
+                entries.Add(new ManualEntry(id, name, exe, string.IsNullOrWhiteSpace(arguments) ? null : arguments.Trim(), console, 0, null));
+            }
             Save(entries);
         }
         Changed?.Invoke();
     }
+
+    /// <summary>What the games on the shelf start, to tell which games of a folder are already there (see <see cref="LaunchKey"/>).</summary>
+    public static HashSet<string> KnownLaunches()
+    {
+        lock (Gate) return Load().Select(entry => LaunchKey(entry.Exe, entry.Arguments)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public static string LaunchKey(string exe, string? arguments) => exe + '\n' + (arguments ?? "");
 
     /// <summary>What was entered for the game, to fill the edit window. Null if it is not one added by hand.</summary>
     public static ManualEntry? EntryOf(Game game)

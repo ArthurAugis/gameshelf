@@ -61,6 +61,11 @@
   icon. The game wears its console's logo (Wii, PlayStation, Xbox...; the Game Boys and the Nintendo 64 borrow
   Nintendo's, the Mega Drive, Saturn and Dreamcast Sega's). It starts like the others and its play time is how long the
   program stays open.
+- **Import a whole folder.** **Add a game**, then **Import a folder...** (or drop a folder on that window). For PC
+  games, every sub-folder is a game and GameShelf picks its program (installers and redistributables are skipped).
+  For ROMs and ISOs, pick the emulator: every file it can run becomes a game, with the arguments written for it, the
+  console guessed from the file or from the folder names (`Roms\PS2`, `Nintendo - Wii U`...), and the cover found by
+  name. You can untick what was wrongly found before importing; games already on the shelf are left out.
 - **Platform logos.** Each spine, and the front of the 3D box, shows the logo of the launcher the game comes from.
   A game you own on several launchers (same title) is one spine with every logo; its page has a chip per launcher to
   switch between the versions (install, play and uninstall are per launcher). Your status, rating, note and
@@ -277,7 +282,7 @@ installer (`GameShelf-1.2.3-win-x64.msi`) and a portable zip. The tag becomes th
 
 ## Status
 
-Version 0.2.1. Developed and tested on Windows 11 with the Steam client in French and English.
+Version 0.3.0. Developed and tested on Windows 11 with the Steam client in French and English.
 Pausing and cancelling a download was tested on one small Steam game. The controller code is
 written for Xbox-style (XInput) controllers.
 

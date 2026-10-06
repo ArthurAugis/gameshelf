@@ -16,9 +16,9 @@ namespace GameShelf.Views;
 /// </summary>
 internal sealed class AddGameDialog : StackPanel
 {
-    static readonly Brush Gold = new SolidColorBrush(Color.FromRgb(0xd9, 0xb7, 0x7a));
-    static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0x9a, 0x91, 0x83));
-    static readonly Brush Edge = new SolidColorBrush(Color.FromRgb(0x3a, 0x35, 0x2f));
+    internal static readonly Brush Gold = new SolidColorBrush(Color.FromRgb(0xd9, 0xb7, 0x7a));
+    internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0x9a, 0x91, 0x83));
+    internal static readonly Brush Edge = new SolidColorBrush(Color.FromRgb(0x3a, 0x35, 0x2f));
 
     readonly TextBox program = Field(), arguments = Field(), name = Field(), gameFile = Field();
     readonly StackPanel emulatorRow;
@@ -32,6 +32,8 @@ internal sealed class AddGameDialog : StackPanel
     readonly Game? editing;
     ConsoleChoice console = CoverSearch.Consoles[0];
     byte[]? chosen;
+    bool importRequested;
+    string? droppedFolder;
 
     /// <summary>True once an edit was saved.</summary>
     bool Saved { get; set; }
@@ -104,9 +106,24 @@ internal sealed class AddGameDialog : StackPanel
         var add = Button(editing is null ? Loc.T("Add") : Loc.T("Save"), secondary: false, 120);
         add.IsDefault = true;
         add.Click += (_, _) => Add();
-        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 22, 0, 0) };
-        footer.Children.Add(cancel);
-        footer.Children.Add(add);
+        var footer = new Grid { Margin = new Thickness(0, 22, 0, 0) };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        actions.Children.Add(cancel);
+        actions.Children.Add(add);
+        footer.Children.Add(actions);
+        if (editing is null)
+        {
+            // Many games at once: a folder of ROMs or of PC games (a folder can also be dropped on this window).
+            var importFolder = new Button
+            {
+                Content = Loc.T("Import a folder..."),
+                Style = (Style)Application.Current.FindResource("LinkButton"),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            importFolder.Click += (_, _) => RequestImport(null);
+            footer.Children.Add(importFolder);
+        }
         Children.Add(footer);
     }
 
@@ -115,6 +132,7 @@ internal sealed class AddGameDialog : StackPanel
     {
         var dialog = new AddGameDialog(editing);
         DialogHost.ShowModal(owner, dialog);
+        if (dialog.importRequested) ImportFolderDialog.Show(owner, dialog.droppedFolder);
         return dialog.Saved;
     }
 
@@ -237,6 +255,11 @@ internal sealed class AddGameDialog : StackPanel
     void OnDrop(object sender, DragEventArgs e)
     {
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] { Length: > 0 } files) return;
+        if (editing is null && Directory.Exists(files[0]))
+        {
+            RequestImport(files[0]);
+            return;
+        }
         // A program or a shortcut dropped here is the game's program; anything else is taken for a cover.
         if (Path.GetExtension(files[0]).ToLowerInvariant() is ".exe" or ".lnk" or ".bat" or ".cmd" or ".url") SetProgram(files[0]);
         else UsePicture(files[0]);
@@ -251,6 +274,14 @@ internal sealed class AddGameDialog : StackPanel
             AddCandidate(Loc.T("Pasted image"), picture, select: true);
             e.Handled = true;
         }
+    }
+
+    /// <summary>Closes this window; <see cref="Show"/> then opens the folder import, on <paramref name="folder"/> if given.</summary>
+    void RequestImport(string? folder)
+    {
+        importRequested = true;
+        droppedFolder = folder;
+        DialogHost.Close(this);
     }
 
     void Add()
@@ -286,7 +317,7 @@ internal sealed class AddGameDialog : StackPanel
         error.Visibility = Visibility.Visible;
     }
 
-    static TextBox Field() => new()
+    internal static TextBox Field() => new()
     {
         Background = Brushes.Transparent,
         BorderThickness = new Thickness(0),
@@ -297,10 +328,10 @@ internal sealed class AddGameDialog : StackPanel
         MaxLength = 400,
     };
 
-    static TextBlock Caption(string text) => new() { Text = text, Foreground = Muted, FontSize = 12.5, Margin = new Thickness(0, 16, 0, 0) };
+    internal static TextBlock Caption(string text) => new() { Text = text, Foreground = Muted, FontSize = 12.5, Margin = new Thickness(0, 16, 0, 0) };
 
     /// <summary>A caption over a field, with an optional button at its right.</summary>
-    static StackPanel Row(string label, TextBox field, Button? side = null)
+    internal static StackPanel Row(string label, TextBox field, Button? side = null)
     {
         var holder = new Grid { Margin = new Thickness(0, 6, 0, 0) };
         holder.ColumnDefinitions.Add(new ColumnDefinition());
@@ -319,7 +350,7 @@ internal sealed class AddGameDialog : StackPanel
         return row;
     }
 
-    static Button Button(string text, bool secondary, double minWidth) => new()
+    internal static Button Button(string text, bool secondary, double minWidth) => new()
     {
         Content = text,
         Style = (Style)Application.Current.FindResource(secondary ? "SecondaryButton" : "PrimaryButton"),

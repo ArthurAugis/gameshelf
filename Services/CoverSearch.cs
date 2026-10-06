@@ -49,12 +49,12 @@ internal static partial class CoverSearch
     const string LibretroRoot = "https://thumbnails.libretro.com/";
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
-    /// <summary>The covers that match <paramref name="name"/> for the console (up to six), or none when offline.</summary>
-    public static async Task<List<CoverCandidate>> SearchAsync(string name, ConsoleChoice console)
+    /// <summary>The covers that match <paramref name="name"/> for the console (up to <paramref name="max"/>), or none when offline.</summary>
+    public static async Task<List<CoverCandidate>> SearchAsync(string name, ConsoleChoice console, int max = MaxResults)
     {
         try
         {
-            var found = console.Folder is null ? await SteamAsync(name) : await LibretroAsync(name, console.Folder);
+            var found = console.Folder is null ? await SteamAsync(name, max) : await LibretroAsync(name, console.Folder, max);
             var downloads = await Task.WhenAll(found.Select(async hit =>
             {
                 try
@@ -74,22 +74,34 @@ internal static partial class CoverSearch
         }
     }
 
-    static async Task<List<(string Title, string Url)>> SteamAsync(string name)
+    /// <summary>
+    /// The one cover to use for a game found in a folder, or null when nothing fits. A console's box art is ranked by
+    /// name, so its first hit is taken; Steam's search is fuzzier, so a hit must have the game's name in its own.
+    /// </summary>
+    public static async Task<byte[]?> BestAsync(string name, ConsoleChoice console)
+    {
+        var wanted = Platforms.Key(name);
+        var found = await SearchAsync(name, console, console.Folder is null ? 3 : 1);
+        return found.FirstOrDefault(c => console.Folder is not null
+            || (wanted.Length >= 3 && Platforms.Key(c.Title) is var key && (key.Contains(wanted, StringComparison.Ordinal) || wanted.Contains(key, StringComparison.Ordinal))))?.Image;
+    }
+
+    static async Task<List<(string Title, string Url)>> SteamAsync(string name, int max)
     {
         var json = await Http.GetStringAsync($"https://store.steampowered.com/api/storesearch/?term={Uri.EscapeDataString(name)}&l=english&cc=us");
         using var document = JsonDocument.Parse(json);
         var hits = new List<(string, string)>();
         if (document.RootElement.TryGetProperty("items", out var items))
-            foreach (var item in items.EnumerateArray().Take(MaxResults))
+            foreach (var item in items.EnumerateArray().Take(max))
                 if (item.TryGetProperty("id", out var id) && item.TryGetProperty("name", out var title))
                     hits.Add((title.GetString() ?? "", $"https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{id.GetInt64()}/library_600x900.jpg"));
         return hits;
     }
 
-    static async Task<List<(string Title, string Url)>> LibretroAsync(string name, string folder)
+    static async Task<List<(string Title, string Url)>> LibretroAsync(string name, string folder, int max)
     {
         var names = await LibretroIndexAsync(folder);
-        return Rank(names, name, MaxResults)
+        return Rank(names, name, max)
             .Select(file => (file, $"{LibretroRoot}{Uri.EscapeDataString(folder)}/Named_Boxarts/{Uri.EscapeDataString(file + ".png")}"))
             .ToList();
     }
